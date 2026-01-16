@@ -11,4 +11,10 @@
         <PackageReference Include="Swashbuckle.AspNetCore" Version="6.4.0"/>
     </ItemGroup>
 
+    <ItemGroup>
+      <Reference Include="ge.singular.roulette">
+        <HintPath>..\lib\ge.singular.roulette.dll</HintPath>
+      </Reference>
+    </ItemGroup>
+
 </Project>
