@@ -9,12 +9,17 @@
     <ItemGroup>
         <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="8.0.7"/>
         <PackageReference Include="Swashbuckle.AspNetCore" Version="6.4.0"/>
+        <PackageReference Include="Microsoft.EntityFrameworkCore.InMemory" Version="8.0.0"/>
     </ItemGroup>
 
     <ItemGroup>
       <Reference Include="ge.singular.roulette">
         <HintPath>..\lib\ge.singular.roulette.dll</HintPath>
       </Reference>
+    </ItemGroup>
+
+    <ItemGroup>
+      <Folder Include="Persistence\" />
     </ItemGroup>
 
 </Project>
