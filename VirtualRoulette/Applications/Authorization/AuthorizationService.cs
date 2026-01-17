@@ -1,6 +1,7 @@
 using System.Security.Claims;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
+using VirtualRoulette.Applications.ActivityTracker;
 using VirtualRoulette.Applications.PasswordHasher;
 using VirtualRoulette.Common;
 using VirtualRoulette.Models.Entities;
@@ -20,7 +21,8 @@ public interface IAuthorizationService
 public class AuthorizationService(
     IUserRepository userRepository, 
     IPasswordHasherService passwordHasherService,
-    AuthorizationServiceValidator validator) : IAuthorizationService
+    AuthorizationServiceValidator validator,
+    IUserActivityTracker activityTracker) : IAuthorizationService
 {
     public async Task<Result> Register(string username, string password)
     {
@@ -87,11 +89,23 @@ public class AuthorizationService(
             new ClaimsPrincipal(claimsIdentity),
             authProperties);
 
+        activityTracker.UpdateActivity(user.Id.ToString());
+
         return Result.Success();
     }
-
+    
     public async Task SignOut(HttpContext httpContext)
     {
+        // Get user ID before signing out
+        var userId = httpContext.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        
+        // Sign out from cookie authentication
         await httpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
+        
+        // Remove user from activity tracking
+        if (userId != null)
+        {
+            activityTracker.RemoveUser(userId);
+        }
     }
 }

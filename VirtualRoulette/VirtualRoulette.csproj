@@ -10,6 +10,7 @@
         <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="8.0.7"/>
         <PackageReference Include="Swashbuckle.AspNetCore" Version="6.4.0"/>
         <PackageReference Include="Microsoft.EntityFrameworkCore.InMemory" Version="8.0.0"/>
+        <PackageReference Include="Microsoft.AspNetCore.SignalR.Common" Version="8.0.0"/>
     </ItemGroup>
 
     <ItemGroup>
@@ -20,6 +21,7 @@
 
     <ItemGroup>
       <Folder Include="Persistence\" />
+      <Folder Include="Settings\" />
     </ItemGroup>
 
 </Project>
