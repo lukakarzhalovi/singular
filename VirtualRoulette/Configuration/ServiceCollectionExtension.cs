@@ -79,6 +79,7 @@ public static class ServiceCollectionExtension
         AddDatabase(services, configuration);
 
         services.AddMemoryCache();
+        services.AddDistributedMemoryCache();
         services.AddSignalR();
     }
 

@@ -3,7 +3,7 @@ using VirtualRoulette.Persistence.Repositories;
 
 namespace VirtualRoulette.Applications.Authorization;
 
-public abstract class AuthorizationServiceValidator(IUserRepository userRepository)
+public class AuthorizationServiceValidator(IUserRepository userRepository)
 {
     public Result ValidateUsername(string username)
     {
