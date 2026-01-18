@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Jackpot Hub Test</title>
+    <script src="https://cdn.jsdelivr.net/npm/@microsoft/signalr@latest/dist/browser/signalr.min.js"></script>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; }
+        .section { margin: 20px 0; padding: 15px; border: 1px solid #ddd; border-radius: 5px; }
+        button { padding: 10px 15px; margin: 5px; cursor: pointer; }
+        input { padding: 8px; margin: 5px; width: 200px; }
+        .status { padding: 10px; margin: 10px 0; border-radius: 5px; }
+        .success { background-color: #d4edda; color: #155724; }
+        .error { background-color: #f8d7da; color: #721c24; }
+        .info { background-color: #d1ecf1; color: #0c5460; }
+    </style>
+</head>
+<body>
+<h1>Jackpot Hub Test</h1>
+
+<!-- Registration Section -->
+<div class="section">
+    <h2>1. Registration</h2>
+    <div>
+        <input type="text" id="regUsername" placeholder="Username" value="">
+        <input type="password" id="regPassword" placeholder="Password" value="">
+        <button onclick="register()">Register</button>
+    </div>
+    <div id="registerStatus" class="status"></div>
+</div>
+
+<!-- Authentication Section -->
+<div class="section">
+    <h2>2. Authentication</h2>
+    <div>
+        <input type="text" id="username" placeholder="Username" value="testuser">
+        <input type="password" id="password" placeholder="Password" value="TestPassword123!">
+        <button onclick="signIn()">Sign In</button>
+        <button onclick="signOut()">Sign Out</button>
+    </div>
+    <div id="authStatus" class="status"></div>
+</div>
+
+<!-- Connection Section -->
+<div class="section">
+    <h2>3. SignalR Connection</h2>
+    <button onclick="connectHub()">Connect to Hub</button>
+    <button onclick="disconnectHub()">Disconnect</button>
+    <div id="connectionStatus" class="status info">Not connected</div>
+</div>
+
+<!-- Jackpot Section -->
+<div class="section">
+    <h2>4. Jackpot</h2>
+    <div id="jackpot" class="status info">Jackpot: 0</div>
+    <div>
+        <input type="number" id="amountInput" placeholder="Amount in cents" value="100">
+        <button onclick="increaseJackpot()">Increase Jackpot</button>
+        <button onclick="getCurrentJackpot()">Get Current</button>
+    </div>
+</div>
+
+<!-- Logs Section -->
+<div class="section">
+    <h2>5. Logs</h2>
+    <div id="logs" style="max-height: 300px; overflow-y: auto; background: #f5f5f5; padding: 10px; font-family: monospace; font-size: 12px;"></div>
+</div>
+
+<script>
+    let connection = null;
+    const API_BASE = 'https://localhost:44346'; // Your API URL
+
+    function log(message, type = 'info') {
+        const logsDiv = document.getElementById('logs');
+        const timestamp = new Date().toLocaleTimeString();
+        const color = type === 'error' ? 'red' : type === 'success' ? 'green' : 'black';
+        logsDiv.innerHTML += `<div style="color: ${color}">[${timestamp}] ${message}</div>`;
+        logsDiv.scrollTop = logsDiv.scrollHeight;
+        console.log(message);
+    }
+
+    async function register() {
+        const username = document.getElementById('regUsername').value;
+        const password = document.getElementById('regPassword').value;
+        const statusDiv = document.getElementById('registerStatus');
+
+        if (!username || !password) {
+            statusDiv.textContent = '❌ Please enter both username and password';
+            statusDiv.className = 'status error';
+            log('Registration failed: Username and password are required', 'error');
+            return;
+        }
+
+        try {
+            log('Attempting to register...');
+            const response = await fetch(`${API_BASE}/api/v1/Authorize/register`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                credentials: 'include',
+                body: JSON.stringify({ username, password })
+            });
+
+            const result = await response.json();
+
+            if (response.ok || response.status === 201) {
+                statusDiv.textContent = '✅ Registered successfully! You can now sign in.';
+                statusDiv.className = 'status success';
+                log('Registered successfully', 'success');
+                // Auto-fill the sign-in form with the registered credentials
+                document.getElementById('username').value = username;
+                document.getElementById('password').value = password;
+            } else {
+                statusDiv.textContent = `❌ Error: ${result.message || 'Registration failed'}`;
+                statusDiv.className = 'status error';
+                log(`Registration failed: ${result.message}`, 'error');
+            }
+        } catch (error) {
+            statusDiv.textContent = `❌ Error: ${error.message}`;
+            statusDiv.className = 'status error';
+            log(`Registration error: ${error.message}`, 'error');
+        }
+    }
+
+    async function signIn() {
+        const username = document.getElementById('username').value;
+        const password = document.getElementById('password').value;
+        const statusDiv = document.getElementById('authStatus');
+
+        try {
+            log('Attempting to sign in...');
+            const response = await fetch(`${API_BASE}/api/v1/Authorize/signin`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                credentials: 'include', // Important: sends cookies
+                body: JSON.stringify({ username, password })
+            });
+
+            const result = await response.json();
+
+            if (response.ok) {
+                statusDiv.textContent = '✅ Signed in successfully!';
+                statusDiv.className = 'status success';
+                log('Signed in successfully', 'success');
+            } else {
+                statusDiv.textContent = `❌ Error: ${result.message || 'Sign in failed'}`;
+                statusDiv.className = 'status error';
+                log(`Sign in failed: ${result.message}`, 'error');
+            }
+        } catch (error) {
+            statusDiv.textContent = `❌ Error: ${error.message}`;
+            statusDiv.className = 'status error';
+            log(`Sign in error: ${error.message}`, 'error');
+        }
+    }
+
+    async function signOut() {
+        try {
+            log('Signing out...');
+            const response = await fetch(`${API_BASE}/api/v1/Authorize/signOut`, {
+                method: 'POST',
+                credentials: 'include'
+            });
+
+            if (response.ok) {
+                document.getElementById('authStatus').textContent = 'Signed out';
+                document.getElementById('authStatus').className = 'status info';
+                log('Signed out successfully', 'success');
+                if (connection) {
+                    await connection.stop();
+                    connection = null;
+                }
+            }
+        } catch (error) {
+            log(`Sign out error: ${error.message}`, 'error');
+        }
+    }
+
+    async function connectHub() {
+        if (connection && connection.state === signalR.HubConnectionState.Connected) {
+            log('Already connected!', 'info');
+            return;
+        }
+
+        // First verify authentication by checking if we can access an authenticated endpoint
+        try {
+            log('Verifying authentication before connecting...');
+            const authCheck = await fetch(`${API_BASE}/api/v1/Jackpot/current`, {
+                credentials: 'include'
+            });
+            
+            if (!authCheck.ok) {
+                if (authCheck.status === 401) {
+                    const errorMsg = '❌ Not authenticated. Please sign in first!';
+                    document.getElementById('connectionStatus').textContent = errorMsg;
+                    document.getElementById('connectionStatus').className = 'status error';
+                    log(errorMsg, 'error');
+                    return;
+                }
+                throw new Error(`Authentication check failed: ${authCheck.status}`);
+            }
+            log('Authentication verified', 'success');
+        } catch (error) {
+            const errorMsg = `❌ Authentication check failed: ${error.message}. Please sign in first!`;
+            document.getElementById('connectionStatus').textContent = errorMsg;
+            document.getElementById('connectionStatus').className = 'status error';
+            log(errorMsg, 'error');
+            return;
+        }
+
+        try {
+            log('Connecting to SignalR hub...');
+            connection = new signalR.HubConnectionBuilder()
+                .withUrl(`${API_BASE}/jackpot-hub`, {
+                    withCredentials: true, // Important: sends cookies
+                    skipNegotiation: false,
+                    transport: signalR.HttpTransportType.WebSockets | signalR.HttpTransportType.LongPolling
+                })
+                .withAutomaticReconnect()
+                .build();
+
+            // Handle jackpot updates
+            connection.on("JackpotUpdated", (jackpotAmount) => {
+                const jackpotDiv = document.getElementById('jackpot');
+                const cents = jackpotAmount / 10000;
+                jackpotDiv.textContent = `Jackpot: ${jackpotAmount} (internal) = ${cents} cents`;
+                jackpotDiv.className = 'status success';
+                log(`🎰 Jackpot Updated: ${jackpotAmount} (${cents} cents)`, 'success');
+            });
+
+            // Handle connection events
+            connection.onreconnecting(() => {
+                document.getElementById('connectionStatus').textContent = 'Reconnecting...';
+                document.getElementById('connectionStatus').className = 'status info';
+                log('Reconnecting to hub...', 'info');
+            });
+
+            connection.onreconnected(() => {
+                document.getElementById('connectionStatus').textContent = '✅ Connected';
+                document.getElementById('connectionStatus').className = 'status success';
+                log('Reconnected to hub', 'success');
+            });
+
+            connection.onclose(() => {
+                document.getElementById('connectionStatus').textContent = '❌ Disconnected';
+                document.getElementById('connectionStatus').className = 'status error';
+                log('Disconnected from hub', 'error');
+            });
+
+            await connection.start();
+            document.getElementById('connectionStatus').textContent = '✅ Connected';
+            document.getElementById('connectionStatus').className = 'status success';
+            log('Connected to Jackpot Hub!', 'success');
+        } catch (error) {
+            document.getElementById('connectionStatus').textContent = `❌ Error: ${error.message}`;
+            document.getElementById('connectionStatus').className = 'status error';
+            log(`Connection error: ${error.message}`, 'error');
+            console.error('Connection error details:', error);
+        }
+    }
+
+    async function disconnectHub() {
+        if (connection) {
+            await connection.stop();
+            connection = null;
+            document.getElementById('connectionStatus').textContent = 'Disconnected';
+            document.getElementById('connectionStatus').className = 'status info';
+            log('Disconnected from hub', 'info');
+        }
+    }
+
+    async function increaseJackpot() {
+        const amount = parseInt(document.getElementById('amountInput').value);
+
+        if (!amount || amount <= 0) {
+            log('Please enter a valid amount', 'error');
+            return;
+        }
+
+        try {
+            log(`Increasing jackpot by ${amount} cents...`);
+            const response = await fetch(`${API_BASE}/api/v1/Jackpot/increase`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                credentials: 'include',
+                body: JSON.stringify({ amountInCents: amount })
+            });
+
+            const result = await response.json();
+
+            if (response.ok) {
+                log(`✅ Jackpot increased: ${result.message}`, 'success');
+            } else {
+                log(`❌ Error: ${result.message}`, 'error');
+            }
+        } catch (error) {
+            log(`Error increasing jackpot: ${error.message}`, 'error');
+        }
+    }
+
+    async function getCurrentJackpot() {
+        try {
+            log('Getting current jackpot...');
+            const response = await fetch(`${API_BASE}/api/v1/Jackpot/current`, {
+                credentials: 'include'
+            });
+
+            const result = await response.json();
+
+            if (response.ok) {
+                const cents = result.jackpotAmount / 10000;
+                document.getElementById('jackpot').textContent =
+                    `Jackpot: ${result.jackpotAmount} (internal) = ${cents} cents`;
+                log(`Current jackpot: ${result.jackpotAmount} (${cents} cents)`, 'success');
+            } else {
+                log(`Error: ${result.message}`, 'error');
+            }
+        } catch (error) {
+            log(`Error getting jackpot: ${error.message}`, 'error');
+        }
+    }
+</script>
+</body>
+</html>

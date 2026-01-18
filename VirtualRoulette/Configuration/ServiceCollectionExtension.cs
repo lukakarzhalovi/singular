@@ -7,6 +7,7 @@ using VirtualRoulette.Applications.Authorization;
 using VirtualRoulette.Applications.Jackpot;
 using VirtualRoulette.Applications.PasswordHasher;
 using VirtualRoulette.Persistence;
+using VirtualRoulette.Persistence.InMemoryCache;
 using VirtualRoulette.Persistence.Repositories;
 
 namespace VirtualRoulette.Configuration;
@@ -18,6 +19,7 @@ public static class ServiceCollectionExtension
         services.AddScoped<IAuthorizationService, AuthorizationService>();
         services.AddScoped<IPasswordHasherService, PasswordHasherServiceService>();
         services.AddSingleton<IUserActivityTracker, UserActivityTracker>();
+        services.AddSingleton<IJackpotInMemoryCache, JackpotInMemoryCache>();
         services.AddSingleton<IJackpotService, JackpotService>(); 
         services.AddScoped<AuthorizationServiceValidator>();
     }
@@ -33,9 +35,27 @@ public static class ServiceCollectionExtension
             .AddCookie(options =>
             {
                 options.Cookie.HttpOnly = true;
-                options.Cookie.SecurePolicy = CookieSecurePolicy.SameAsRequest;
-                options.Cookie.SameSite = SameSiteMode.Lax;
+                // Use Always to ensure Secure=true when SameSite=None (browser requirement)
+                // This is required for cross-origin SignalR connections
+                options.Cookie.SecurePolicy = CookieSecurePolicy.Always;
+                // Use None for cross-origin SignalR support (requires Secure cookie)
+                // This allows cookies to be sent cross-origin for SignalR connections
+                options.Cookie.SameSite = SameSiteMode.None;
                 options.LoginPath = "/api/v1/Authorize/signin";
+        
+                // Disable redirects for API endpoints - return 401 instead
+                options.Events.OnRedirectToLogin = context =>
+                {
+                    context.Response.StatusCode = StatusCodes.Status401Unauthorized;
+                    return Task.CompletedTask;
+                };
+        
+                // Disable redirects for access denied - return 403 instead
+                options.Events.OnRedirectToAccessDenied = context =>
+                {
+                    context.Response.StatusCode = StatusCodes.Status403Forbidden;
+                    return Task.CompletedTask;
+                };
         
                 // Set cookie expiration to 5 minutes with sliding expiration
                 // This means the cookie will expire 5 minutes after the last request
@@ -85,6 +105,7 @@ public static class ServiceCollectionExtension
 
     private static void AddDatabase(IServiceCollection services, IConfiguration configuration)
     {
+        //todo add configuration
         services.AddDbContext<AppDbContext>(options =>
             options.UseInMemoryDatabase("VirtualRouletteDb"));
     }

@@ -12,8 +12,23 @@ builder.Services.AddRepositories();
 builder.Services.AddSettings(builder.Configuration);
 builder.Services.AddAuthentification();
 builder.Services.AddServices();
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowLocalhost", policy =>
+    {
+        policy.WithOrigins(
+                "http://localhost:48958", 
+                "https://localhost:44346",
+                "http://localhost:63352"  // IntelliJ/Rider internal server
+            )
+            .AllowAnyMethod()
+            .AllowAnyHeader()
+            .AllowCredentials(); // Important for SignalR and cookies
+    });
+});
 
-// Add Rate Limiting
+
+
 builder.Services.AddRateLimiter(options =>
 {
     options.AddFixedWindowLimiter("fixed", limiterOptions =>
@@ -29,6 +44,7 @@ builder.Services.AddControllers();
 
 var app = builder.Build();
 
+app.UseCors("AllowLocalhost");
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();

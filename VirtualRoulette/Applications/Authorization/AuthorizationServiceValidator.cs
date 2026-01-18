@@ -24,19 +24,19 @@ public class AuthorizationServiceValidator(IUserRepository userRepository)
         var usernameResult = ValidateUsername(username);
         if (usernameResult.IsFailure)
         {
-            return Result.Failure(usernameResult.Error);
+            return Result.Failure(usernameResult.Errors);
         }
 
         var passwordResult = ValidatePassword(password);
         if (passwordResult.IsFailure)
         {
-            return Result.Failure(passwordResult.Error);
+            return Result.Failure(passwordResult.Errors);
         }
 
         var usernameExistsResult = await userRepository.UsernameExistsAsync(username);
         if (usernameExistsResult.IsFailure)
         {
-            return Result.Failure(usernameExistsResult.Error);
+            return Result.Failure(usernameExistsResult.Errors);
         }
 
         return usernameExistsResult.Value 

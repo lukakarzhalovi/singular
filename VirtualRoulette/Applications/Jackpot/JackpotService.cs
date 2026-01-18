@@ -1,38 +1,29 @@
-using Microsoft.Extensions.Caching.Memory;
+using VirtualRoulette.Common;
+using VirtualRoulette.Persistence.InMemoryCache;
 
 namespace VirtualRoulette.Applications.Jackpot;
 
 
 public interface IJackpotService
 {
-    long GetCurrentJackpot();
+    Result<long> GetCurrentJackpot();
     
-    long AddToJackpot(int contributionInCents);
+    Result AddToJackpot(int contributionInCents);
     
-    long ResetJackpot();
+    Result ResetJackpot();
+    
+    /*
+    Result<long> IncreaseJackpot(long amountInInternalFormat);
+*/
 }
 
-public class JackpotService : IJackpotService
+public class JackpotService(IJackpotInMemoryCache jackpotInMemoryCache) : IJackpotService
 {
-    private readonly IMemoryCache _cache;
-    private const string JackpotCacheKey = "jackpot_amount";
     private const int CentToInternalMultiplier = 10_000;
 
-    private readonly object _lockObject = new();
-
-    public JackpotService(IMemoryCache cache)
+    public Result<long> GetCurrentJackpot()
     {
-        _cache = cache;
-        
-        if (!_cache.TryGetValue(JackpotCacheKey, out long _))
-        {
-            _cache.Set(JackpotCacheKey, 0L);
-        }
-    }
-    
-    public long GetCurrentJackpot()
-    {
-        return _cache.TryGetValue(JackpotCacheKey, out long jackpot) ? jackpot : 0;
+        return jackpotInMemoryCache.Get();
     }
 
     /// <summary>
@@ -40,32 +31,36 @@ public class JackpotService : IJackpotService
     /// </summary>
     /// <param name="contributionInCents">The bet amount in cents (1% will be added).</param>
     /// <returns>The new jackpot amount after adding the contribution.</returns>
-    public long AddToJackpot(int contributionInCents)
+    public Result AddToJackpot(int contributionInCents)
     {
-        lock (_lockObject)
+        // Convert cents to internal format and calculate 1%
+        // contribution in cents * 10,000 (to internal) / 100 (for 1%)
+        // = contribution * 100 in internal format
+        long contributionInInternal = contributionInCents * (CentToInternalMultiplier / 100);
+        
+        var result = jackpotInMemoryCache.Add(contributionInInternal);
+
+        if (result.IsFailure)
         {
-            var currentJackpot = GetCurrentJackpot();
-            
-            // Convert cents to internal format and calculate 1%
-            // contribution in cents * 10,000 (to internal) / 100 (for 1%)
-            // = contribution * 100 in internal format
-            long contributionInInternal = contributionInCents * (CentToInternalMultiplier / 100);
-            
-            var newJackpot = currentJackpot + contributionInInternal;
-            
-            _cache.Set(JackpotCacheKey, newJackpot);
-            
-            return newJackpot;
+            //errror
         }
+        return Result.Success();
     }
 
-    public long ResetJackpot()
+    public Result ResetJackpot()
     {
-        lock (_lockObject)
-        {
-            var previousJackpot = GetCurrentJackpot();
-            _cache.Set(JackpotCacheKey, 0L);
-            return previousJackpot;
-        }
+        var result =  jackpotInMemoryCache.Reset();
+        
+        return result.IsFailure
+            ? Result.Failure(result.Errors)
+            : Result.Success();
     }
+    
+    /*public Result IncreaseJackpot(long amountInInternalFormat)
+    {
+        var result =  jackpotInMemoryCache.Add(amountInInternalFormat);
+        
+        return result.IsFailure
+            ? Result.Failure(result.Errors)
+            : Result.Success();    }*/
 }

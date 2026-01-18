@@ -1,12 +1,14 @@
 using System.Security.Cryptography;
 using System.Text;
+using VirtualRoulette.Common;
+using VirtualRoulette.Common.Errors;
 
 namespace VirtualRoulette.Applications.PasswordHasher;
 
 public interface IPasswordHasherService
 {
-    string HashPassword(string password);
-    bool VerifyPassword(string password, string passwordHash);
+    Result<string> HashPassword(string password);
+    Result<bool> VerifyPassword(string password, string passwordHash);
 }
 
 public class PasswordHasherServiceService : IPasswordHasherService
@@ -14,40 +16,55 @@ public class PasswordHasherServiceService : IPasswordHasherService
     private const int SaltSize = 32;
     private const int Iterations = 100000;
 
-    public string HashPassword(string password)
+    public Result<string> HashPassword(string password)
     {
         if (string.IsNullOrEmpty(password))
-            throw new ArgumentException("Password cannot be null or empty.", nameof(password));
+        {
+            return Result.Failure<string>(DomainError.PasswordHasher.InvalidPassword);
+        }
 
-        var salt = new byte[SaltSize];
-        RandomNumberGenerator.Fill(salt);
+        try
+        {
+            var salt = new byte[SaltSize];
+            RandomNumberGenerator.Fill(salt);
 
-        var hash = ComputeHash(password, salt, Iterations);
-        
-        return $"{Iterations}:{Convert.ToBase64String(salt)}:{Convert.ToBase64String(hash)}";
+            var hash = ComputeHash(password, salt, Iterations);
+            
+            var passwordHash = $"{Iterations}:{Convert.ToBase64String(salt)}:{Convert.ToBase64String(hash)}";
+            return Result.Success(passwordHash);
+        }
+        catch (Exception)
+        {
+            return Result.Failure<string>(DomainError.PasswordHasher.HashError);
+        }
     }
 
-    public bool VerifyPassword(string password, string passwordHash)
+    public Result<bool> VerifyPassword(string password, string passwordHash)
     {
         if (string.IsNullOrEmpty(password) || string.IsNullOrEmpty(passwordHash))
-            return false;
+        {
+            return Result.Success(false);
+        }
 
         try
         {
             var parts = passwordHash.Split(':');
             if (parts.Length != 3)
-                return false;
+            {
+                return Result.Success(false);
+            }
 
             var iterations = int.Parse(parts[0]);
             var salt = Convert.FromBase64String(parts[1]);
             var storedHash = Convert.FromBase64String(parts[2]);
 
             var computedHash = ComputeHash(password, salt, iterations);
-            return CryptographicOperations.FixedTimeEquals(computedHash, storedHash);
+            var isValid = CryptographicOperations.FixedTimeEquals(computedHash, storedHash);
+            return Result.Success(isValid);
         }
-        catch
+        catch (Exception e)
         {
-            return false;
+            return Result.Failure<bool>(DomainError.PasswordHasher.VerifyError);
         }
     }
 

@@ -26,8 +26,11 @@ public class JackpotHub(
             await Groups.AddToGroupAsync(Context.ConnectionId, "JackpotSubscribers");
             
             // Send current jackpot to the newly connected client
-            var currentJackpot = jackpotService.GetCurrentJackpot();
-            await Clients.Caller.SendAsync("JackpotUpdated", currentJackpot);
+            var currentJackpotResult = jackpotService.GetCurrentJackpot();
+            if (currentJackpotResult.IsSuccess)
+            {
+                await Clients.Caller.SendAsync("JackpotUpdated", currentJackpotResult.Value);
+            }
             
             logger.LogInformation("User {UserId} connected to JackpotHub. ConnectionId: {ConnectionId}", 
                 userId, Context.ConnectionId);
@@ -78,7 +81,8 @@ public class JackpotHub(
             activityTracker.UpdateActivity(userId);
         }
         
-        return jackpotService.GetCurrentJackpot();
+        var result = jackpotService.GetCurrentJackpot();
+        return result.IsSuccess ? result.Value : 0;
     }
     
     private string? GetUserId()

@@ -23,6 +23,9 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
                 .HasMaxLength(100);
             entity.Property(e => e.PasswordHash)
                 .IsRequired();
+            entity.Property(e => e.Balance)
+                .HasPrecision(18, 2) // For currency: 18 total digits, 2 decimal places
+                .IsRequired();
         });
     }
 }
