@@ -5,14 +5,14 @@ namespace VirtualRoulette.Common;
 
 public static class ResultExtensions
 {
-    public static ApiServiceResponse ToApiResponse(this Result result, int statusCode = StatusCodes.Status200OK)
+    public static ApiServiceResponse ToApiResponse(this Result result, int? successStatusCode = null)
     {
         if (result.IsSuccess)
         {
             return new ApiServiceResponse
             {
                 Message = "Success",
-                StatusCode = statusCode
+                StatusCode = successStatusCode ?? StatusCodes.Status200OK
             };
         }
 
@@ -30,7 +30,7 @@ public static class ResultExtensions
         };
     }
 
-    public static ApiServiceResponse<T> ToApiResponse<T>(this Result<T> result, int statusCode)
+    public static ApiServiceResponse<T> ToApiResponse<T>(this Result<T> result, int? successStatusCode = null)
     {
         if (result.IsSuccess)
         {
@@ -38,11 +38,11 @@ public static class ResultExtensions
             {
                 Data = result.Value,
                 Message = "Success",
-                StatusCode = statusCode
+                StatusCode = successStatusCode ?? StatusCodes.Status200OK
             };
         }
 
-        var baseResponse = result.ToApiResponse(statusCode);
+        var baseResponse = result.ToApiResponse(successStatusCode);
         return new ApiServiceResponse<T>(default!, baseResponse);
     }
 

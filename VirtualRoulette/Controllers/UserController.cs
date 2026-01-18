@@ -15,12 +15,9 @@ public class UserController(IUserService userService) : ControllerBase
     public async Task<ActionResult<ApiServiceResponse<decimal>>> GetBalance([FromRoute] int userId)
     {
         var balanceResult = await userService.GetBalance(userId);
-
-        var response = balanceResult.ToApiResponse(
-            balanceResult.IsSuccess ? StatusCodes.Status200OK : StatusCodes.Status400BadRequest);
         
         return balanceResult.IsSuccess 
-            ? Ok(response)
-            : BadRequest(response);
+            ? Ok(balanceResult.ToApiResponse())
+            : BadRequest(balanceResult.ToApiResponse());
     }
 }
