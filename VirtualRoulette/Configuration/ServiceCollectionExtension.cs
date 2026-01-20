@@ -4,7 +4,7 @@ using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.EntityFrameworkCore;
 using VirtualRoulette.Applications.ActivityTracker;
 using VirtualRoulette.Applications.Authorization;
-using VirtualRoulette.Applications.Jackpot;
+using VirtualRoulette.Applications.Bet;
 using VirtualRoulette.Applications.PasswordHasher;
 using VirtualRoulette.Persistence;
 using VirtualRoulette.Persistence.InMemoryCache;
@@ -20,13 +20,15 @@ public static class ServiceCollectionExtension
         services.AddScoped<IPasswordHasherService, PasswordHasherServiceService>();
         services.AddSingleton<IUserActivityTracker, UserActivityTracker>();
         services.AddSingleton<IJackpotInMemoryCache, JackpotInMemoryCache>();
-        services.AddSingleton<IJackpotService, JackpotService>(); 
         services.AddScoped<AuthorizationServiceValidator>();
+        services.AddScoped<IRouletteService, RouletteService>();
+
     }
     
     public static void AddRepositories(this IServiceCollection services)
     {
         services.AddScoped<IUserRepository, UserRepository>();
+        services.AddScoped<IBetRepository, BetRepository>();
     }
     
     public static void AddAuthentification(this IServiceCollection services)
@@ -88,12 +90,7 @@ public static class ServiceCollectionExtension
             options.Cookie.IsEssential = true;
         });
     }
-    
-    public static void AddMiddleware(this IServiceCollection services)
-    {
-        //Todo add middleware if i need
-    }
-    
+
     public static void AddSettings(this IServiceCollection services, IConfiguration configuration)
     {
         AddDatabase(services, configuration);

@@ -11,7 +11,6 @@ public interface IUserRepository
     Task<Result<User?>> GetById(int id);
     Task<Result<User>> CreateAsync(User user);
     Task<Result<bool>> UsernameExistsAsync(string username);
-    Task<Result<bool>> AddBalance(int id, decimal amount);
 }
 
 public class UserRepository(AppDbContext dbContext) : IUserRepository
@@ -75,27 +74,5 @@ public class UserRepository(AppDbContext dbContext) : IUserRepository
         {
             return Result.Failure<bool>(DomainError.DbError.Error(nameof(UserRepository), e.Message));
         }
-    }
-
-    public async Task<Result<bool>> AddBalance(int id, decimal amount)
-    {
-        try
-        {
-            var user = await dbContext.Users.FirstOrDefaultAsync(u => u.Id == id);
-        
-            if (user == null)
-            {
-                return Result.Failure<bool>(DomainError.User.NotFound);
-            }
-        
-            user.Balance += amount;
-            await dbContext.SaveChangesAsync();
-        
-            return Result.Success(true);
-        }
-        catch (Exception e)
-        {
-            return Result.Failure<bool>(DomainError.DbError.Error(nameof(UserRepository), e.Message));
-        }    
     }
 }

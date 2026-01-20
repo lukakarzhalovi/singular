@@ -55,4 +55,25 @@ public static class DomainError
             ErrorType.BadRequest
         );
     }
+    
+    public static class Bet
+    {
+        public static readonly Error InvalidBet = new(
+            "DomainErrors.Bet.InvalidBet",
+            "The bet string is invalid or incorrectly formatted.",
+            ErrorType.BadRequest
+        );
+        
+        public static readonly Error InsufficientBalance = new(
+            "DomainErrors.Bet.InsufficientBalance",
+            "User does not have sufficient balance to place this bet.",
+            ErrorType.BadRequest
+        );
+        
+        public static readonly Error NotFound = new(
+            "DomainErrors.Bet.NotFound",
+            "Bet not found.",
+            ErrorType.NotFound
+        );
+    }
 }

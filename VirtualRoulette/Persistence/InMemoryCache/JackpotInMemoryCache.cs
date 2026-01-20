@@ -45,7 +45,7 @@ public class JackpotInMemoryCache(IMemoryCache cache) : IJackpotInMemoryCache
         }
         catch (Exception e)
         {
-            return Result.Failure<long>(DomainError.InMemoryCache.Error(nameof(IJackpotInMemoryCache), e.Message));
+            return Result.Failure(DomainError.InMemoryCache.Error(nameof(IJackpotInMemoryCache), e.Message));
         }
     }
     
@@ -82,7 +82,7 @@ public class JackpotInMemoryCache(IMemoryCache cache) : IJackpotInMemoryCache
                 
                 if (setResult.IsFailure)
                 {
-                    return Result.Failure<long>(setResult.Errors);
+                    return Result.Failure(setResult.Errors);
                 }
                 
                 return Result.Success();
@@ -90,7 +90,7 @@ public class JackpotInMemoryCache(IMemoryCache cache) : IJackpotInMemoryCache
         }
         catch (Exception e)
         {
-            return Result.Failure<long>(DomainError.InMemoryCache.Error(nameof(IJackpotInMemoryCache), e.Message));
+            return Result.Failure(DomainError.InMemoryCache.Error(nameof(IJackpotInMemoryCache), e.Message));
         }
     }
 }

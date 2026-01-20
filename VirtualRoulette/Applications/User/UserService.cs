@@ -1,5 +1,7 @@
+using Microsoft.EntityFrameworkCore;
 using VirtualRoulette.Common;
 using VirtualRoulette.Common.Errors;
+using VirtualRoulette.Persistence;
 using VirtualRoulette.Persistence.Repositories;
 
 namespace VirtualRoulette.Applications.User;
@@ -11,7 +13,7 @@ public interface IUserService
     Task<Result> AddBalance(int userId, decimal amount);
 }
 
-public class UserService(IUserRepository userRepository) : IUserService
+public class UserService(AppDbContext dbContext, IUserRepository userRepository) : IUserService
 {
     public async Task<Result<decimal>> GetBalance(int userId)
     {
@@ -34,15 +36,23 @@ public class UserService(IUserRepository userRepository) : IUserService
 
     public async Task<Result> AddBalance(int userId, decimal amount)
     {
-        var addResult = await userRepository.AddBalance(userId, amount);
-
-        if (addResult.IsFailure)
+        try
         {
-            return Result.Failure<decimal>(addResult.Errors);
-        }
+            var user = await dbContext.Users.FirstOrDefaultAsync(u => u.Id == userId);
 
-        return addResult.IsFailure
-            ? Result.Failure<decimal>(addResult.Errors)
-            : Result.Success();
+            if (user == null)
+            {
+                return Result.Failure(DomainError.User.NotFound);
+            }
+
+            user.Balance += amount;
+            await dbContext.SaveChangesAsync();
+
+            return Result.Success();
+        }
+        catch (Exception e)
+        {
+            return Result.Failure(DomainError.DbError.Error(nameof(UserService), e.Message));
+        }
     }
 }

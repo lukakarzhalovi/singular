@@ -2,14 +2,14 @@ using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.SignalR;
 using VirtualRoulette.Applications.ActivityTracker;
-using VirtualRoulette.Applications.Jackpot;
+using VirtualRoulette.Persistence.InMemoryCache;
 
 namespace VirtualRoulette.Hubs;
 
 [Authorize]
 public class JackpotHub(
     IUserActivityTracker activityTracker,
-    IJackpotService jackpotService,
+    IJackpotInMemoryCache jackpotInMemoryCache,
     ILogger<JackpotHub> logger)
     : Hub
 {
@@ -26,7 +26,7 @@ public class JackpotHub(
             await Groups.AddToGroupAsync(Context.ConnectionId, "JackpotSubscribers");
             
             // Send current jackpot to the newly connected client
-            var currentJackpotResult = jackpotService.GetCurrentJackpot();
+            var currentJackpotResult = jackpotInMemoryCache.Get();
             if (currentJackpotResult.IsSuccess)
             {
                 await Clients.Caller.SendAsync("JackpotUpdated", currentJackpotResult.Value);
@@ -81,7 +81,7 @@ public class JackpotHub(
             activityTracker.UpdateActivity(userId);
         }
         
-        var result = jackpotService.GetCurrentJackpot();
+        var result = jackpotInMemoryCache.Get();
         return result.IsSuccess ? result.Value : 0;
     }
     

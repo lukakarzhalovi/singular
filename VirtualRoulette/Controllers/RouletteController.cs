@@ -1,21 +1,28 @@
+using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using VirtualRoulette.Applications.Bet;
+using VirtualRoulette.Common;
 using VirtualRoulette.Models.DTOs;
 
 namespace VirtualRoulette.Controllers;
 
 [Authorize]
-[Route("api/v1/User")]
+[Route("api/v1/Roulette")]
 [ApiController]
-public class RouletteService() : ControllerBase
+public class RouletteController(IRouletteService rouletteService) : ControllerBase
 {
-    [HttpPost]
-    public async Task<ActionResult<ApiServiceResponse<decimal>>> GetBalance([FromRoute] int userId)
+    [HttpPost("bet")]
+    public async Task<ActionResult<ApiServiceResponse<BetResponse>>> Bet([FromBody] string bet)
     {
-        var balanceResult = await userService.GetBalance(userId);
+        var userIdClaim = HttpContext.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        var userId = int.TryParse(userIdClaim, out var id) ? id : 0;
+        var ipAddress = HttpContext.Connection.RemoteIpAddress?.ToString() ?? "Unknown";
         
-        return balanceResult.IsSuccess 
-            ? Ok(balanceResult.ToApiResponse())
-            : BadRequest(balanceResult.ToApiResponse());
+        var result = await rouletteService.Bet(bet, userId, ipAddress);
+        
+        return result.IsSuccess 
+            ? Ok(result.ToApiResponse())
+            : BadRequest(result.ToApiResponse());
     }
 }
