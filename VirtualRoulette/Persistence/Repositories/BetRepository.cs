@@ -1,5 +1,7 @@
+using Microsoft.EntityFrameworkCore;
 using VirtualRoulette.Common;
 using VirtualRoulette.Common.Errors;
+using VirtualRoulette.Common.Pagination;
 using VirtualRoulette.Models.Entities;
 
 namespace VirtualRoulette.Persistence.Repositories;
@@ -7,6 +9,7 @@ namespace VirtualRoulette.Persistence.Repositories;
 public interface IBetRepository
 {
     Task<Result<Bet>> CreateAsync(Bet bet);
+    Task<Result<PagedList<Bet>>> GetByUserId(int userId, int skip, int limit);
 }
 
 public class BetRepository(AppDbContext context) : BaseRepository(context), IBetRepository
@@ -21,6 +24,22 @@ public class BetRepository(AppDbContext context) : BaseRepository(context), IBet
         catch (Exception e)
         {
             return Result.Failure<Bet>(DomainError.DbError.Error(nameof(BetRepository), e.Message));
+        }
+    }
+
+    public async Task<Result<PagedList<Bet>>> GetByUserId(int userId, int skip, int limit)
+    {
+        try
+        {
+            var result = await Context.Bets.Where(b => b.UserId == userId)
+                .AsNoTracking()
+                .ToListAsync();
+
+            return new PagedList<Bet>(result, result.Count);
+        }
+        catch (Exception e)
+        {
+            return Result.Failure<PagedList<Bet>>(DomainError.DbError.Error(nameof(BetRepository), e.Message));
         }
     }
 }

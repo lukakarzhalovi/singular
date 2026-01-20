@@ -1,8 +1,6 @@
-using Microsoft.EntityFrameworkCore;
 using VirtualRoulette.Common;
 using VirtualRoulette.Common.Errors;
-using VirtualRoulette.Models.DTOs;
-using VirtualRoulette.Persistence;
+using VirtualRoulette.Common.Pagination;
 using VirtualRoulette.Persistence.Repositories;
 
 namespace VirtualRoulette.Applications.User;
@@ -10,15 +8,13 @@ namespace VirtualRoulette.Applications.User;
 public interface IUserService
 {
     Task<Result<decimal>> GetBalance(int userId);
-    
-    Task<Result> AddBalance(int userId, decimal amount);
-    Task<Result<BetHistoryDto>> GetBets(int userId);
+
+    Task<Result<PagedList<Models.Entities.Bet>>> GetBets(int userId, int page, int limit);
 }
 
 public class UserService(
-    AppDbContext dbContext,
     IUserRepository userRepository,
-    IUnitOfWork unitOfWork
+    IBetRepository betRepository
 ) : IUserService
 {
     public async Task<Result<decimal>> GetBalance(int userId)
@@ -32,40 +28,17 @@ public class UserService(
 
         var user = userResult.Value;
 
-        if (user is null)
-        {
-            return Result.Failure<decimal>(DomainError.User.NotFound);
-        }
-
-        return Result.Success(user.Balance);
+        return user is null 
+            ? Result.Failure<decimal>(DomainError.User.NotFound) 
+            : Result.Success(user.Balance);
     }
-
-    public async Task<Result> AddBalance(int userId, decimal amount)
+    
+    public async Task<Result<PagedList<Models.Entities.Bet>>> GetBets(int userId, int page, int limit)
     {
-        try
-        {
-            var user = await dbContext.Users.FirstOrDefaultAsync(u => u.Id == userId);
-
-            if (user == null)
-            {
-                return Result.Failure(DomainError.User.NotFound);
-            }
-
-            user.Balance += amount;
-            var saveResult = await unitOfWork.SaveChangesAsync();
-
-            return saveResult.IsFailure 
-                ? Result.Failure(saveResult.Errors) 
-                : Result.Success();
-        }
-        catch (Exception e)
-        {
-            return Result.Failure(DomainError.DbError.Error(nameof(UserService), e.Message));
-        }
-    }
-
-    public Task<Result<BetHistoryDto>> GetBets(int userId)
-    {
-        throw new NotImplementedException();
+        var userBetResult = await betRepository.GetByUserId(userId, page, limit);
+        
+        return userBetResult.IsFailure 
+            ? Result.Failure<PagedList<Models.Entities.Bet>>(userBetResult.Errors) 
+            : userBetResult.Value;
     }
 }

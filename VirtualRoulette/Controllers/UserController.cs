@@ -1,10 +1,11 @@
-using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using VirtualRoulette.Applications.User;
 using VirtualRoulette.Common;
 using VirtualRoulette.Common.Helpers;
+using VirtualRoulette.Common.Pagination;
 using VirtualRoulette.Models.DTOs;
+using VirtualRoulette.Models.Entities;
 
 namespace VirtualRoulette.Controllers;
 
@@ -30,7 +31,7 @@ public class UserController(IUserService userService) : ControllerBase
     }
     
     [HttpGet("bets")]
-    public async Task<ActionResult<ApiServiceResponse<BetHistoryDto>>> GetBets()
+    public async Task<ActionResult<ApiServiceResponse<PagedList<Bet>>>> GetBets(int page, int limit)
     {
         var userIdResult = UserHelper.GetUserId(HttpContext);
         if (userIdResult.IsFailure)
@@ -38,7 +39,7 @@ public class UserController(IUserService userService) : ControllerBase
             return Unauthorized(userIdResult.ToApiResponse());
         }
         
-        var balanceResult = await userService.GetBets(userIdResult.Value);
+        var balanceResult = await userService.GetBets(userIdResult.Value, page, limit);
         
         return balanceResult.IsSuccess 
             ? Ok(balanceResult.ToApiResponse())
