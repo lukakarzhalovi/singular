@@ -9,14 +9,13 @@ public interface IBetRepository
     Task<Result<Bet>> CreateAsync(Bet bet);
 }
 
-public class BetRepository(AppDbContext dbContext) : IBetRepository
+public class BetRepository(AppDbContext context) : BaseRepository(context), IBetRepository
 {
     public async Task<Result<Bet>> CreateAsync(Bet bet)
     {
         try
         {
-            dbContext.Bets.Add(bet);
-            // SaveChanges will be called by the service within transaction
+            await Context.Bets.AddAsync(bet);
             return Result.Success(bet);
         }
         catch (Exception e)

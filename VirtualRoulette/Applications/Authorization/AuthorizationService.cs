@@ -21,7 +21,8 @@ public class AuthorizationService(
     IUserRepository userRepository, 
     IPasswordHasherService passwordHasherService,
     AuthorizationServiceValidator validator,
-    IUserActivityTracker activityTracker) : IAuthorizationService
+    IUserActivityTracker activityTracker,
+    IUnitOfWork unitOfWork) : IAuthorizationService
 {
     public async Task<Result> Register(string username, string password)
     {
@@ -48,9 +49,14 @@ public class AuthorizationService(
         };
 
         var createResult = await userRepository.CreateAsync(user);
-        
-        return createResult.IsFailure 
-            ? Result.Failure(createResult.FirstError) 
+        if (createResult.IsFailure)
+        {
+            return Result.Failure(createResult.FirstError);
+        }
+
+        var saveResult = await unitOfWork.SaveChangesAsync();
+        return saveResult.IsFailure 
+            ? Result.Failure(saveResult.Errors) 
             : Result.Success();
     }
 

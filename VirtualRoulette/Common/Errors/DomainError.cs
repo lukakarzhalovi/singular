@@ -9,6 +9,18 @@ public static class DomainError
             "DomainErrors_Combinations_RequiredPoint",
             ErrorType.BadRequest
         );
+        
+        public static readonly Error Unauthorized = new(
+            "DomainErrors.User.NotFound",
+            "DomainErrors_Combinations_RequiredPoint",
+            ErrorType.BadRequest
+        );
+        
+        public static readonly Error IpAddressNotFound = new(
+            "DomainErrors.User.NotFound",
+            "DomainErrors_Combinations_RequiredPoint",
+            ErrorType.BadRequest
+        );
     }
     
     public static class DbError

@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using VirtualRoulette.Common;
 using VirtualRoulette.Common.Errors;
+using VirtualRoulette.Models.DTOs;
 using VirtualRoulette.Persistence;
 using VirtualRoulette.Persistence.Repositories;
 
@@ -11,9 +12,14 @@ public interface IUserService
     Task<Result<decimal>> GetBalance(int userId);
     
     Task<Result> AddBalance(int userId, decimal amount);
+    Task<Result<BetHistoryDto>> GetBets(int userId);
 }
 
-public class UserService(AppDbContext dbContext, IUserRepository userRepository) : IUserService
+public class UserService(
+    AppDbContext dbContext,
+    IUserRepository userRepository,
+    IUnitOfWork unitOfWork
+) : IUserService
 {
     public async Task<Result<decimal>> GetBalance(int userId)
     {
@@ -46,13 +52,20 @@ public class UserService(AppDbContext dbContext, IUserRepository userRepository)
             }
 
             user.Balance += amount;
-            await dbContext.SaveChangesAsync();
+            var saveResult = await unitOfWork.SaveChangesAsync();
 
-            return Result.Success();
+            return saveResult.IsFailure 
+                ? Result.Failure(saveResult.Errors) 
+                : Result.Success();
         }
         catch (Exception e)
         {
             return Result.Failure(DomainError.DbError.Error(nameof(UserService), e.Message));
         }
+    }
+
+    public Task<Result<BetHistoryDto>> GetBets(int userId)
+    {
+        throw new NotImplementedException();
     }
 }

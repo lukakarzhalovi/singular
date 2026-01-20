@@ -13,13 +13,13 @@ public interface IUserRepository
     Task<Result<bool>> UsernameExistsAsync(string username);
 }
 
-public class UserRepository(AppDbContext dbContext) : IUserRepository
+public class UserRepository(AppDbContext context) : BaseRepository(context), IUserRepository
 {
     public async Task<Result<User>> GetByUsernameAsync(string username)
     {
         try
         {
-            var user = await dbContext.Users
+            var user = await Context.Users
                 .FirstOrDefaultAsync(u => u.Username == username);
 
             if (user == null)
@@ -39,7 +39,7 @@ public class UserRepository(AppDbContext dbContext) : IUserRepository
     {
         try
         {
-            var user = await dbContext.Users.FirstOrDefaultAsync(u => u.Id == userId);
+            var user = await Context.Users.FirstOrDefaultAsync(u => u.Id == userId);
             return Result.Success<User?>(user);
         }
         catch (Exception e)
@@ -52,8 +52,7 @@ public class UserRepository(AppDbContext dbContext) : IUserRepository
     {
         try
         {
-            dbContext.Users.Add(user);
-            await dbContext.SaveChangesAsync();
+            await Context.Users.AddAsync(user);
             return Result.Success(user);
         }
         catch (Exception e)
@@ -66,7 +65,7 @@ public class UserRepository(AppDbContext dbContext) : IUserRepository
     {
         try
         {
-            var exists = await dbContext.Users
+            var exists = await Context.Users
                 .AnyAsync(u => u.Username == username);
             return Result.Success(exists);
         }

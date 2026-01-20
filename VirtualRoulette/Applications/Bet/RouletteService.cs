@@ -5,7 +5,6 @@ using VirtualRoulette.Common;
 using VirtualRoulette.Common.Errors;
 using VirtualRoulette.Hubs;
 using VirtualRoulette.Models.DTOs;
-using VirtualRoulette.Persistence;
 using VirtualRoulette.Persistence.InMemoryCache;
 using VirtualRoulette.Persistence.Repositories;
 
@@ -17,9 +16,9 @@ public interface IRouletteService
 }
 
 public class RouletteService(
-    AppDbContext dbContext,
     IUserRepository userRepository,
     IBetRepository betRepository,
+    IUnitOfWork unitOfWork,
     IJackpotInMemoryCache jackpotInMemoryCache,
     IHubContext<JackpotHub> hubContext,
     ILogger<RouletteService> logger)
@@ -54,15 +53,13 @@ public class RouletteService(
         }
 
         //Begin database transaction
-        await using var transaction = await dbContext.Database.BeginTransactionAsync();
+        await unitOfWork.BeginTransactionAsync();
         
         try
         {
-            await dbContext.Entry(user).ReloadAsync();
-            
             if (user.Balance < betAmountDecimal)
             {
-                await transaction.RollbackAsync();
+                await unitOfWork.RollbackTransactionAsync();
                 return Result.Failure<BetResponse>(DomainError.Bet.InsufficientBalance);
             }
 
@@ -75,17 +72,18 @@ public class RouletteService(
             var currentJackpotResult = jackpotInMemoryCache.Get();
             if (currentJackpotResult.IsFailure)
             {
-                //error
+                logger.LogError("Error jackpot get with message {Errors}", 
+                    currentJackpotResult.Errors.FirstOrDefault()?.Message);            
             }
 
             var currentJackpot = currentJackpotResult.Value;
             var contributionInInternalFormat = betAmountInCents * 100;
             
-            var jackpotResult = jackpotInMemoryCache.Set(currentJackpot + contributionInInternalFormat);
-            if (jackpotResult.IsFailure)
+            var setJackpotResult = jackpotInMemoryCache.Set(currentJackpot + contributionInInternalFormat);
+            if (setJackpotResult.IsFailure)
             {
                 logger.LogError("Error jackpot increase with message {Errors}", 
-                    jackpotResult.Errors.FirstOrDefault()?.Message);
+                    setJackpotResult.Errors.FirstOrDefault()?.Message);
             }
 
             await hubContext.Clients.Group("JackpotSubscribers")
@@ -112,12 +110,18 @@ public class RouletteService(
             var createBetResult = await betRepository.CreateAsync(bet);
             if (createBetResult.IsFailure)
             {
-                await transaction.RollbackAsync();
+                await unitOfWork.RollbackTransactionAsync();
                 return Result.Failure<BetResponse>(createBetResult.Errors);
             }
 
-            await dbContext.SaveChangesAsync();
-            await transaction.CommitAsync();
+            var saveResult = await unitOfWork.SaveChangesAsync();
+            if (saveResult.IsFailure)
+            {
+                await unitOfWork.RollbackTransactionAsync();
+                return Result.Failure<BetResponse>(saveResult.Errors);
+            }
+
+            await unitOfWork.CommitTransactionAsync();
 
             var response = new BetResponse
             {
@@ -133,7 +137,7 @@ public class RouletteService(
         {
             try
             {
-                await transaction.RollbackAsync();
+                await unitOfWork.RollbackTransactionAsync();
             }
             catch (Exception rollbackEx)
             {
