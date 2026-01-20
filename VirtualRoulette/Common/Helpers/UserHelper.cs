@@ -28,12 +28,12 @@ public static class UserHelper
             var ipAddress = content.Connection.RemoteIpAddress?.ToString();
             
             return ipAddress is null 
-                ? Result.Failure<string>(DomainError.User.NotFound) 
+                ? Result.Failure<string>(DomainError.User.IpAddressNotFound) 
                 : Result.Success(ipAddress);
         }
         catch (Exception)
         {
-            return Result.Failure<string>(DomainError.User.NotFound);
+            return Result.Failure<string>(DomainError.User.IpAddressNotFound);
         }
     }
 }

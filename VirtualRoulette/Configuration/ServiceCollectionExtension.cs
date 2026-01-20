@@ -6,6 +6,7 @@ using VirtualRoulette.Applications.ActivityTracker;
 using VirtualRoulette.Applications.Authorization;
 using VirtualRoulette.Applications.Bet;
 using VirtualRoulette.Applications.PasswordHasher;
+using VirtualRoulette.Applications.User;
 using VirtualRoulette.Persistence;
 using VirtualRoulette.Persistence.InMemoryCache;
 using VirtualRoulette.Persistence.Repositories;
@@ -22,7 +23,7 @@ public static class ServiceCollectionExtension
         services.AddSingleton<IJackpotInMemoryCache, JackpotInMemoryCache>();
         services.AddScoped<AuthorizationServiceValidator>();
         services.AddScoped<IRouletteService, RouletteService>();
-
+        services.AddScoped<IUserService, UserService>();
     }
     
     public static void AddRepositories(this IServiceCollection services)

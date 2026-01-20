@@ -19,7 +19,8 @@ builder.Services.AddCors(options =>
         policy.WithOrigins(
                 "http://localhost:48958", 
                 "https://localhost:44346",
-                "http://localhost:63352"  // IntelliJ/Rider internal server
+                "http://localhost:63352",  // IntelliJ/Rider internal server
+                "http://localhost:63343"   // IntelliJ/Rider internal server (frontend)
             )
             .AllowAnyMethod()
             .AllowAnyHeader()

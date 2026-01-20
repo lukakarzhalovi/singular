@@ -31,11 +31,18 @@ public class BetRepository(AppDbContext context) : BaseRepository(context), IBet
     {
         try
         {
-            var result = await Context.Bets.Where(b => b.UserId == userId)
-                .AsNoTracking()
+            var query = Context.Bets.Where(b => b.UserId == userId).AsNoTracking();
+            
+            var totalCount = await query.CountAsync();
+            
+            var items = await query
+                .OrderByDescending(b => b.CreatedAt)
+                .Skip(skip)
+                .Take(limit)
                 .ToListAsync();
 
-            return new PagedList<Bet>(result, result.Count);
+            var pagedList = new PagedList<Bet>(items, totalCount);
+            return Result.Success(pagedList);
         }
         catch (Exception e)
         {

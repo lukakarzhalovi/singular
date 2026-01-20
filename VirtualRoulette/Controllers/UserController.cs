@@ -45,4 +45,20 @@ public class UserController(IUserService userService) : ControllerBase
             ? Ok(balanceResult.ToApiResponse())
             : BadRequest(balanceResult.ToApiResponse());
     }
+    
+    [HttpPost("balance")]
+    public async Task<ActionResult<ApiServiceResponse>> AddBalance([FromBody] decimal amount)
+    {
+        var userIdResult = UserHelper.GetUserId(HttpContext);
+        if (userIdResult.IsFailure)
+        {
+            return Unauthorized(userIdResult.ToApiResponse());
+        }
+
+        var result = await userService.AddBalance(userIdResult.Value, amount);
+        
+        return result.IsSuccess 
+            ? Ok(result.ToApiResponse())
+            : BadRequest(result.ToApiResponse());
+    }
 }

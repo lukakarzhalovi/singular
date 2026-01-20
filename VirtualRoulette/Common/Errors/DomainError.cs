@@ -21,6 +21,12 @@ public static class DomainError
             "DomainErrors_Combinations_RequiredPoint",
             ErrorType.BadRequest
         );
+        
+        public static readonly Error InvalidAmount = new(
+            "DomainErrors.User.InvalidAmount",
+            "Amount must be greater than zero.",
+            ErrorType.BadRequest
+        );
     }
     
     public static class DbError

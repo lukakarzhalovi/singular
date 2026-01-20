@@ -10,11 +10,14 @@ public interface IUserService
     Task<Result<decimal>> GetBalance(int userId);
 
     Task<Result<PagedList<Models.Entities.Bet>>> GetBets(int userId, int page, int limit);
+    
+    Task<Result> AddBalance(int userId, decimal amount);
 }
 
 public class UserService(
     IUserRepository userRepository,
-    IBetRepository betRepository
+    IBetRepository betRepository,
+    IUnitOfWork unitOfWork
 ) : IUserService
 {
     public async Task<Result<decimal>> GetBalance(int userId)
@@ -35,10 +38,41 @@ public class UserService(
     
     public async Task<Result<PagedList<Models.Entities.Bet>>> GetBets(int userId, int page, int limit)
     {
-        var userBetResult = await betRepository.GetByUserId(userId, page, limit);
+        var skip = (page - 1) * limit;
+        var userBetResult = await betRepository.GetByUserId(userId, skip, limit);
         
         return userBetResult.IsFailure 
             ? Result.Failure<PagedList<Models.Entities.Bet>>(userBetResult.Errors) 
-            : userBetResult.Value;
+            : Result.Success(userBetResult.Value);
+    }
+    
+    public async Task<Result> AddBalance(int userId, decimal amount)
+    {
+        var userResult = await userRepository.GetById(userId);
+        
+        if (userResult.IsFailure)
+        {
+            return Result.Failure(userResult.Errors);
+        }
+
+        var user = userResult.Value;
+        
+        if (user is null)
+        {
+            return Result.Failure(DomainError.User.NotFound);
+        }
+
+        if (amount <= 0)
+        {
+            return Result.Failure(DomainError.User.InvalidAmount);
+        }
+
+        user.Balance += amount;
+        
+        var saveResult = await unitOfWork.SaveChangesAsync();
+        
+        return saveResult.IsFailure 
+            ? Result.Failure(saveResult.Errors) 
+            : Result.Success();
     }
 }

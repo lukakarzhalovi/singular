@@ -42,8 +42,19 @@ public static class ResultExtensions
             };
         }
 
-        var baseResponse = result.ToApiResponse(successStatusCode);
-        return new ApiServiceResponse<T>(default!, baseResponse);
+        var firstError = result.Errors.Length > 0 ? result.Errors[0] : Error.None;
+        var validationErrors = result.Errors
+            .Where(e => e.ErrorType == ErrorType.Validation)
+            .GroupBy(e => e.Code)
+            .ToDictionary(g => g.Key, g => g.Select(e => e.Message).ToArray());
+
+        return new ApiServiceResponse<T>
+        {
+            Data = default,
+            Message = firstError.Message,
+            StatusCode = GetStatusCodeFromErrorType(firstError.ErrorType),
+            ValidationErrors = validationErrors.Any() ? validationErrors : null
+        };
     }
 
     private static int GetStatusCodeFromErrorType(ErrorType errorType)

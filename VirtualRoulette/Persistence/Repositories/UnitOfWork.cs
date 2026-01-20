@@ -16,6 +16,7 @@ public interface IUnitOfWork
 public sealed class UnitOfWork(AppDbContext context) : BaseRepository(context), IUnitOfWork
 {
     private IDbContextTransaction? _transaction;
+    private bool _transactionStarted;
 
     public async Task<Result> SaveChangesAsync(CancellationToken cancellationToken = default)
     {
@@ -32,11 +33,30 @@ public sealed class UnitOfWork(AppDbContext context) : BaseRepository(context), 
 
     public async Task BeginTransactionAsync()
     {
-        _transaction = await Context.Database.BeginTransactionAsync();
+        if (Context.Database.ProviderName == "Microsoft.EntityFrameworkCore.InMemory")
+        {
+            _transactionStarted = true;
+            return;
+        }
+
+        try
+        {
+            _transaction = await Context.Database.BeginTransactionAsync();
+            _transactionStarted = true;
+        }
+        catch (InvalidOperationException)
+        {
+            _transactionStarted = true;
+        }
     }
 
     public async Task CommitTransactionAsync()
     {
+        if (!_transactionStarted)
+        {
+            return;
+        }
+
         if (_transaction != null)
         {
             await _transaction.CommitAsync();
@@ -45,6 +65,11 @@ public sealed class UnitOfWork(AppDbContext context) : BaseRepository(context), 
 
     public async Task RollbackTransactionAsync()
     {
+        if (!_transactionStarted)
+        {
+            return;
+        }
+
         if (_transaction != null)
         {
             await _transaction.RollbackAsync();
