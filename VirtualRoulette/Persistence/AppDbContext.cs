@@ -39,18 +39,15 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
                 .IsRequired();
         });
 
-        // Configure Bet entity
         modelBuilder.Entity<Bet>(entity =>
         {
             entity.HasKey(e => e.Id);
             
-            // Configure foreign key relationship to User
             entity.HasOne(e => e.User)
                 .WithMany()
                 .HasForeignKey(e => e.UserId)
                 .OnDelete(DeleteBehavior.Restrict);
             
-            // Configure properties
             entity.Property(e => e.BetString)
                 .IsRequired();
             
@@ -61,7 +58,6 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
             entity.Property(e => e.CreatedAt)
                 .IsRequired();
             
-            // Add indexes for performance
             entity.HasIndex(e => e.UserId);
             entity.HasIndex(e => e.SpinId)
                 .IsUnique();

@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Mvc;
 using VirtualRoulette.Common.Errors;
 using VirtualRoulette.Models.DTOs;
 
@@ -55,6 +56,18 @@ public static class ResultExtensions
             StatusCode = GetStatusCodeFromErrorType(firstError.ErrorType),
             ValidationErrors = validationErrors.Any() ? validationErrors : null
         };
+    }
+    
+    public static ActionResult<ApiServiceResponse> ToActionResult(this Result result)
+    {
+        var response = result.ToApiResponse();
+        return new ObjectResult(response) { StatusCode = response.StatusCode };
+    }
+    
+    public static ActionResult<ApiServiceResponse<T>> ToActionResult<T>(this Result<T> result)
+    {
+        var response = result.ToApiResponse();
+        return new ObjectResult(response) { StatusCode = response.StatusCode };
     }
 
     private static int GetStatusCodeFromErrorType(ErrorType errorType)
