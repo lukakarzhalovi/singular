@@ -1,3 +1,5 @@
+using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Authentication.Cookies;
 using VirtualRoulette.Applications.ActivityTracker;
 using VirtualRoulette.Common.Helpers;
 
@@ -8,40 +10,31 @@ public class ActivityTrackingMiddleware(
     ILogger<ActivityTrackingMiddleware> logger
 )
 {
-
     public async Task InvokeAsync(HttpContext context, IUserActivityTracker activityTracker)
     {
-        var isAutIsAuthenticated = context.User.Identity!.IsAuthenticated;
-        if (isAutIsAuthenticated)
+        if (context.User.Identity?.IsAuthenticated == true)
         {
             var userIdResult = UserHelper.GetUserId(context);
             
             if (userIdResult.IsSuccess)
             {
-                var userIsActive = activityTracker.IsUserActive(userIdResult.Value);
-                if (userIsActive)
-                {
-                    activityTracker.UpdateActivity(userIdResult.Value);
-                    logger.LogDebug("Updated activity for user {UserId}", userIdResult);
 
-                }
-                /*
-                if (!userIsActive)
+                if (!activityTracker.IsUserActive(userIdResult.Value))
                 {
-                    // User's session has expired due to inactivity
-                    logger.LogInformation("User {UserId} session expired due to inactivity", userId);
+                    await context.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
+                    activityTracker.RemoveUser(userIdResult.Value);
                     
-                    // The cookie validation event will handle signing out the user
-                    // Just continue processing the request
+                    logger.LogInformation("User {UserId} automatically signed out due to inactivity", userIdResult.Value);
+                    
+                    context.Response.StatusCode = StatusCodes.Status401Unauthorized;
+                    await context.Response.WriteAsync("User session expired due to inactivity");
+                    return;
                 }
-                else
-                {
-                    // Update user activity timestamp
-                    activityTracker.UpdateActivity(userId);
-                    logger.LogDebug("Updated activity for user {UserId}", userId);
-                }*/
+                activityTracker.UpdateActivity(userIdResult.Value);
+                logger.LogDebug("Updated activity for user {UserId}", userIdResult.Value);
             }
         }
+        
         await next(context);
     }
 }

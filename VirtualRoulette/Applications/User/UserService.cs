@@ -7,11 +7,11 @@ namespace VirtualRoulette.Applications.User;
 
 public interface IUserService
 {
-    Task<Result<decimal>> GetBalance(int userId);
+    Task<Result<long>> GetBalance(int userId);
 
     Task<Result<PagedList<Models.Entities.Bet>>> GetBets(int userId, int page, int limit);
     
-    Task<Result> AddBalance(int userId, decimal amount);
+    Task<Result> AddBalance(int userId, long amountInCents);
 }
 
 public class UserService(
@@ -20,19 +20,19 @@ public class UserService(
     IUnitOfWork unitOfWork
 ) : IUserService
 {
-    public async Task<Result<decimal>> GetBalance(int userId)
+    public async Task<Result<long>> GetBalance(int userId)
     {
         var userResult = await userRepository.GetById(userId);
 
         if (userResult.IsFailure)
         {
-            return Result.Failure<decimal>(userResult.Errors);
+            return Result.Failure<long>(userResult.Errors);
         }
 
         var user = userResult.Value;
 
         return user is null 
-            ? Result.Failure<decimal>(DomainError.User.NotFound) 
+            ? Result.Failure<long>(DomainError.User.NotFound) 
             : Result.Success(user.Balance);
     }
     
@@ -46,7 +46,7 @@ public class UserService(
             : Result.Success(userBetResult.Value);
     }
     
-    public async Task<Result> AddBalance(int userId, decimal amount)
+    public async Task<Result> AddBalance(int userId, long amountInCents)
     {
         var userResult = await userRepository.GetById(userId);
         
@@ -62,12 +62,12 @@ public class UserService(
             return Result.Failure(DomainError.User.NotFound);
         }
 
-        if (amount <= 0)
+        if (amountInCents <= 0)
         {
             return Result.Failure(DomainError.User.InvalidAmount);
         }
 
-        user.Balance += amount;
+        user.Balance += amountInCents;
         
         var saveResult = await unitOfWork.SaveChangesAsync();
         

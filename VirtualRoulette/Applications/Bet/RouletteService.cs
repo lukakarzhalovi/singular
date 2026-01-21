@@ -46,24 +46,22 @@ public class RouletteService(
             return Result.Failure<BetResponse>(DomainError.User.NotFound);
         }
 
-        var betAmountDecimal = betAmountInCents / 100m;
-        if (user.Balance < betAmountDecimal)
+        if (user.Balance < betAmountInCents)
         {
             return Result.Failure<BetResponse>(DomainError.Bet.InsufficientBalance);
         }
 
-        //Begin database transaction
         await unitOfWork.BeginTransactionAsync();
         
         try
         {
-            if (user.Balance < betAmountDecimal)
+            if (user.Balance < betAmountInCents)
             {
                 await unitOfWork.RollbackTransactionAsync();
                 return Result.Failure<BetResponse>(DomainError.Bet.InsufficientBalance);
             }
 
-            user.Balance -= betAmountDecimal;
+            user.Balance -= betAmountInCents;
 
             var winningNumber = RandomNumberGenerator.GetInt32(0, 37);
 
@@ -91,8 +89,7 @@ public class RouletteService(
             
             if (wonAmountInCents > 0)
             {
-                var wonAmountDecimal = wonAmountInCents / 100m;
-                user.Balance += wonAmountDecimal;
+                user.Balance += wonAmountInCents;
             }
 
             var bet = new Models.Entities.Bet

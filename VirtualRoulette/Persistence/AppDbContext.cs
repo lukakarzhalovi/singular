@@ -36,7 +36,6 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
             entity.Property(e => e.PasswordHash)
                 .IsRequired();
             entity.Property(e => e.Balance)
-                .HasPrecision(18, 2) // For currency: 18 total digits, 2 decimal places
                 .IsRequired();
         });
 

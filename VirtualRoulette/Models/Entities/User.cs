@@ -6,5 +6,5 @@ public class User
     public required string Username { get; set; }
     public required string PasswordHash { get; set; } 
     public required DateTime CreatedAt { get; set; } 
-    public required decimal Balance { get; set; }
+    public required long Balance { get; set; }
 }

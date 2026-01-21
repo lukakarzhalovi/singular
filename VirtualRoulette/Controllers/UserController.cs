@@ -15,7 +15,7 @@ namespace VirtualRoulette.Controllers;
 public class UserController(IUserService userService) : ControllerBase
 {
         [HttpGet("balance")]
-    public async Task<ActionResult<ApiServiceResponse<decimal>>> GetBalance()
+    public async Task<ActionResult<ApiServiceResponse<long>>> GetBalance()
     {
         var userIdResult = UserHelper.GetUserId(HttpContext);
         if (userIdResult.IsFailure)
@@ -47,7 +47,7 @@ public class UserController(IUserService userService) : ControllerBase
     }
     
     [HttpPost("balance")]
-    public async Task<ActionResult<ApiServiceResponse>> AddBalance([FromBody] decimal amount)
+    public async Task<ActionResult<ApiServiceResponse>> AddBalance([FromBody] long amountInCents)
     {
         var userIdResult = UserHelper.GetUserId(HttpContext);
         if (userIdResult.IsFailure)
@@ -55,7 +55,7 @@ public class UserController(IUserService userService) : ControllerBase
             return Unauthorized(userIdResult.ToApiResponse());
         }
 
-        var result = await userService.AddBalance(userIdResult.Value, amount);
+        var result = await userService.AddBalance(userIdResult.Value, amountInCents);
         
         return result.IsSuccess 
             ? Ok(result.ToApiResponse())

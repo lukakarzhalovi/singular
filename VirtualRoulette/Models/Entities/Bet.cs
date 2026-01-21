@@ -14,7 +14,7 @@ public class Bet
     
     public int WinningNumber { get; set; }
     
-    public int WonAmountInCents { get; set; }
+    public long WonAmountInCents { get; set; }
     
     public Guid SpinId { get; set; }
     

@@ -1,6 +1,5 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.SignalR;
-using VirtualRoulette.Applications.ActivityTracker;
 using VirtualRoulette.Common.Helpers;
 using VirtualRoulette.Persistence.InMemoryCache;
 
@@ -8,7 +7,6 @@ namespace VirtualRoulette.Hubs;
 
 [Authorize]
 public class JackpotHub(
-    IUserActivityTracker activityTracker,
     IJackpotInMemoryCache jackpotInMemoryCache,
     ILogger<JackpotHub> logger)
     : Hub
@@ -19,13 +17,8 @@ public class JackpotHub(
         
         if (userIdResult.IsSuccess)
         {
-            // Track user activity
-            activityTracker.UpdateActivity(userIdResult.Value);
-            
-            // Add to jackpot subscribers group
             await Groups.AddToGroupAsync(Context.ConnectionId, "JackpotSubscribers");
             
-            // Send current jackpot to the newly connected client
             var currentJackpotResult = jackpotInMemoryCache.Get();
             if (currentJackpotResult.IsSuccess)
             {
@@ -44,7 +37,7 @@ public class JackpotHub(
     {
         var userIdResult = UserHelper.GetUserId(Context);
         
-        if (userIdResult.IsFailure)
+        if (userIdResult.IsSuccess)
         {
             await Groups.RemoveFromGroupAsync(Context.ConnectionId, "JackpotSubscribers");
             
@@ -60,27 +53,8 @@ public class JackpotHub(
         await base.OnDisconnectedAsync(exception);
     }
     
-    
-    public void Heartbeat()
-    {
-        var userIdResult = UserHelper.GetUserId(Context);
-        
-        if (userIdResult.IsSuccess)
-        {
-            activityTracker.UpdateActivity(userIdResult.Value);
-            logger.LogDebug("Heartbeat received from user {UserId}", userIdResult.Value);
-        }
-    }
-    
     public long GetCurrentJackpot()
     {
-        var userIdResult = UserHelper.GetUserId(Context);
-        
-        if (userIdResult.IsSuccess)
-        {
-            activityTracker.UpdateActivity(userIdResult.Value);
-        }
-        
         var result = jackpotInMemoryCache.Get();
         return result.IsSuccess ? result.Value : 0;
     }
