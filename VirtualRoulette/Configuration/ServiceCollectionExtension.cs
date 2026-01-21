@@ -1,4 +1,3 @@
-using System.Security.Claims;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.EntityFrameworkCore;
@@ -7,6 +6,7 @@ using VirtualRoulette.Applications.Authorization;
 using VirtualRoulette.Applications.Bet;
 using VirtualRoulette.Applications.PasswordHasher;
 using VirtualRoulette.Applications.User;
+using VirtualRoulette.Common.Helpers;
 using VirtualRoulette.Persistence;
 using VirtualRoulette.Persistence.InMemoryCache;
 using VirtualRoulette.Persistence.Repositories;
@@ -70,9 +70,15 @@ public static class ServiceCollectionExtension
                 options.Events.OnValidatePrincipal = async context =>
                 {
                     var activityTracker = context.HttpContext.RequestServices.GetRequiredService<IUserActivityTracker>();
-                    var userId = context.Principal?.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-            
-                    if (userId != null && !activityTracker.IsUserActive(userId))
+                    var userIdResult = UserHelper.GetUserId(context.HttpContext);
+                    if (userIdResult.IsFailure)
+                    {
+                        //Todo log
+                        return;
+                    }
+                    //var userId = context.Principal?.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+                    
+                    if (!activityTracker.IsUserActive(userIdResult.Value))
                     {
                         // User has been inactive for more than 5 minutes
                         // Reject the cookie and sign out the user
@@ -80,7 +86,7 @@ public static class ServiceCollectionExtension
                         await context.HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
                 
                         var logger = context.HttpContext.RequestServices.GetRequiredService<ILogger<Program>>();
-                        logger.LogInformation("User {UserId} automatically signed out due to inactivity", userId);
+                        logger.LogInformation("User {UserId} automatically signed out due to inactivity", userIdResult);
                     }
                 };
             });

@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
 using VirtualRoulette.Applications.Authorization;
 using VirtualRoulette.Common;
+using VirtualRoulette.Common.Helpers;
 using VirtualRoulette.Models.DTOs;
 
 namespace VirtualRoulette.Controllers;
@@ -38,9 +39,15 @@ public class AuthorizationController(IAuthorizationService authorizationService)
     }
 
     [HttpPost("signOut")]
-    public new async Task<ActionResult<ApiServiceResponse>> SignOut()
+    public new ActionResult<ApiServiceResponse> SignOut()
     {
-        var result = await authorizationService.SignOut(HttpContext);
+        var userIdResult = UserHelper.GetUserId(HttpContext);
+        if (userIdResult.IsFailure)
+        {
+            return Unauthorized();
+        }
+
+        var result = authorizationService.SignOut(userIdResult.Value);
         var response = result.ToApiResponse(result.IsSuccess ? StatusCodes.Status200OK : StatusCodes.Status500InternalServerError);
         return result.IsSuccess 
             ? Ok(response)

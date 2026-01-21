@@ -1,4 +1,5 @@
 using System.Security.Claims;
+using Microsoft.AspNetCore.SignalR;
 using VirtualRoulette.Common.Errors;
 
 namespace VirtualRoulette.Common.Helpers;
@@ -10,10 +11,28 @@ public static class UserHelper
         try
         {
             var userIdClaim = content.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-            var userId = int.TryParse(userIdClaim, out var id) ? id : 0;
+            var parsed = int.TryParse(userIdClaim, out var id);
 
-            return Result.Success(userId);
+            return !parsed 
+                ? Result.Failure<int>(DomainError.User.NotFound) 
+                : Result.Success(id);
+        }
+        catch (Exception)
+        {
+            return Result.Failure<int>(DomainError.User.Unauthorized);
+        }
+    }
+    
+    public static Result<int> GetUserId(HubCallerContext content)
+    {
+        try
+        {
+            var userIdClaim = content.User?.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            var parsed = int.TryParse(userIdClaim, out var id);
 
+            return !parsed 
+                ? Result.Failure<int>(DomainError.User.NotFound) 
+                : Result.Success(id);
         }
         catch (Exception)
         {

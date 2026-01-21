@@ -1,7 +1,7 @@
-using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.SignalR;
 using VirtualRoulette.Applications.ActivityTracker;
+using VirtualRoulette.Common.Helpers;
 using VirtualRoulette.Persistence.InMemoryCache;
 
 namespace VirtualRoulette.Hubs;
@@ -15,12 +15,12 @@ public class JackpotHub(
 {
     public override async Task OnConnectedAsync()
     {
-        var userId = GetUserId();
+        var userIdResult = UserHelper.GetUserId(Context);
         
-        if (userId != null)
+        if (userIdResult.IsSuccess)
         {
             // Track user activity
-            activityTracker.UpdateActivity(userId);
+            activityTracker.UpdateActivity(userIdResult.Value);
             
             // Add to jackpot subscribers group
             await Groups.AddToGroupAsync(Context.ConnectionId, "JackpotSubscribers");
@@ -33,7 +33,7 @@ public class JackpotHub(
             }
             
             logger.LogInformation("User {UserId} connected to JackpotHub. ConnectionId: {ConnectionId}", 
-                userId, Context.ConnectionId);
+                userIdResult.Value, Context.ConnectionId);
         }
         
         await base.OnConnectedAsync();
@@ -42,18 +42,18 @@ public class JackpotHub(
 
     public override async Task OnDisconnectedAsync(Exception? exception)
     {
-        var userId = GetUserId();
+        var userIdResult = UserHelper.GetUserId(Context);
         
-        if (userId != null)
+        if (userIdResult.IsFailure)
         {
             await Groups.RemoveFromGroupAsync(Context.ConnectionId, "JackpotSubscribers");
             
             logger.LogInformation("User {UserId} disconnected from JackpotHub. ConnectionId: {ConnectionId}", 
-                userId, Context.ConnectionId);
+                userIdResult.Value, Context.ConnectionId);
             
             if (exception != null)
             {
-                logger.LogWarning(exception, "User {UserId} disconnected with error", userId);
+                logger.LogWarning(exception, "User {UserId} disconnected with error", userIdResult.Value);
             }
         }
         
@@ -63,30 +63,25 @@ public class JackpotHub(
     
     public void Heartbeat()
     {
-        var userId = GetUserId();
+        var userIdResult = UserHelper.GetUserId(Context);
         
-        if (userId != null)
+        if (userIdResult.IsSuccess)
         {
-            activityTracker.UpdateActivity(userId);
-            logger.LogDebug("Heartbeat received from user {UserId}", userId);
+            activityTracker.UpdateActivity(userIdResult.Value);
+            logger.LogDebug("Heartbeat received from user {UserId}", userIdResult.Value);
         }
     }
     
     public long GetCurrentJackpot()
     {
-        var userId = GetUserId();
+        var userIdResult = UserHelper.GetUserId(Context);
         
-        if (userId != null)
+        if (userIdResult.IsSuccess)
         {
-            activityTracker.UpdateActivity(userId);
+            activityTracker.UpdateActivity(userIdResult.Value);
         }
         
         var result = jackpotInMemoryCache.Get();
         return result.IsSuccess ? result.Value : 0;
-    }
-    
-    private string? GetUserId()
-    {
-        return Context.User?.FindFirst(ClaimTypes.NameIdentifier)?.Value;
     }
 }

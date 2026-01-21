@@ -4,10 +4,10 @@ namespace VirtualRoulette.Applications.ActivityTracker;
 
 public interface IUserActivityTracker
 {
-    void UpdateActivity(string userId);
-    bool IsUserActive(string userId);
-    void RemoveUser(string userId);
-    DateTime? GetLastActivity(string userId);
+    void UpdateActivity(int userId);
+    bool IsUserActive(int userId);
+    void RemoveUser(int userId);
+    DateTime? GetLastActivity(int userId);
 }
 
 public class UserActivityTracker(IMemoryCache cache) : IUserActivityTracker
@@ -15,7 +15,7 @@ public class UserActivityTracker(IMemoryCache cache) : IUserActivityTracker
     private readonly TimeSpan _inactivityTimeout = TimeSpan.FromMinutes(5);
     private const string CacheKeyPrefix = "user_activity";
 
-    public void UpdateActivity(string userId)
+    public void UpdateActivity(int userId)
     {
         var cacheOptions = new MemoryCacheEntryOptions()
             .SetAbsoluteExpiration(_inactivityTimeout);
@@ -23,7 +23,7 @@ public class UserActivityTracker(IMemoryCache cache) : IUserActivityTracker
         cache.Set(GetCacheKey(userId), DateTime.UtcNow, cacheOptions);
     }
     
-    public bool IsUserActive(string userId)
+    public bool IsUserActive(int userId)
     {
         
         if (cache.TryGetValue(GetCacheKey(userId), out DateTime lastActivity))
@@ -34,13 +34,13 @@ public class UserActivityTracker(IMemoryCache cache) : IUserActivityTracker
         return false;
     }
     
-    public void RemoveUser(string userId)
+    public void RemoveUser(int userId)
     {
         cache.Remove(GetCacheKey(userId));
     }
 
 
-    public DateTime? GetLastActivity(string userId)
+    public DateTime? GetLastActivity(int userId)
     {
         
         if (cache.TryGetValue(GetCacheKey(userId), out DateTime lastActivity))
@@ -51,5 +51,5 @@ public class UserActivityTracker(IMemoryCache cache) : IUserActivityTracker
         return null;
     }
 
-    private static string GetCacheKey(string userId) => $"{CacheKeyPrefix}{userId}";
+    private static string GetCacheKey(int userId) => $"{CacheKeyPrefix}{userId}";
 }

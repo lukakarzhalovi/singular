@@ -1,5 +1,5 @@
-using System.Security.Claims;
 using VirtualRoulette.Applications.ActivityTracker;
+using VirtualRoulette.Common.Helpers;
 
 namespace VirtualRoulette.Middleware;
 
@@ -14,15 +14,15 @@ public class ActivityTrackingMiddleware(
         var isAutIsAuthenticated = context.User.Identity!.IsAuthenticated;
         if (isAutIsAuthenticated)
         {
-            var userId = context.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            var userIdResult = UserHelper.GetUserId(context);
             
-            if (userId is not null)
+            if (userIdResult.IsSuccess)
             {
-                var userIsActive = activityTracker.IsUserActive(userId);
+                var userIsActive = activityTracker.IsUserActive(userIdResult.Value);
                 if (userIsActive)
                 {
-                    activityTracker.UpdateActivity(userId);
-                    logger.LogDebug("Updated activity for user {UserId}", userId);
+                    activityTracker.UpdateActivity(userIdResult.Value);
+                    logger.LogDebug("Updated activity for user {UserId}", userIdResult);
 
                 }
                 /*

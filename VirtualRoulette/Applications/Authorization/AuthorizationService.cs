@@ -14,7 +14,7 @@ public interface IAuthorizationService
     
     Task<Result> SignIn(string username, string password, HttpContext httpContext);
     
-    Task<Result> SignOut(HttpContext httpContext);
+    Result SignOut(int userId);
 }
 
 public class AuthorizationService(
@@ -106,27 +106,16 @@ public class AuthorizationService(
             new ClaimsPrincipal(claimsIdentity),
             authProperties);
 
-        activityTracker.UpdateActivity(user.Id.ToString());
+        activityTracker.UpdateActivity(user.Id);
 
         return Result.Success();
     }
     
-    public async Task<Result> SignOut(HttpContext httpContext)
+    public Result SignOut(int userId)
     {
         try
         {
-            // Get user ID before signing out
-            var userId = httpContext.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-            
-            // Sign out from cookie authentication
-            await httpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
-            
-            // Remove user from activity tracking
-            if (userId != null)
-            {
-                activityTracker.RemoveUser(userId);
-            }
-            
+            activityTracker.RemoveUser(userId);
             return Result.Success();
         }
         catch (Exception e)
