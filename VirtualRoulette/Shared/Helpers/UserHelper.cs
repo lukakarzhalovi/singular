@@ -1,6 +1,7 @@
 using System.Security.Claims;
 using Microsoft.AspNetCore.SignalR;
 using VirtualRoulette.Common.Errors;
+using VirtualRoulette.Shared;
 
 namespace VirtualRoulette.Common.Helpers;
 

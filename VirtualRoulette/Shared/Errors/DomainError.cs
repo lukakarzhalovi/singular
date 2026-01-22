@@ -1,3 +1,5 @@
+using VirtualRoulette.Shared.Errors;
+
 namespace VirtualRoulette.Common.Errors;
 
 public static class DomainError

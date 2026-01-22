@@ -1,16 +1,17 @@
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
-using VirtualRoulette.Applications.ActivityTracker;
-using VirtualRoulette.Applications.Authorization;
-using VirtualRoulette.Applications.Bet;
-using VirtualRoulette.Applications.PasswordHasher;
-using VirtualRoulette.Applications.User;
+using VirtualRoulette.Core.Services.ActivityTracker;
+using VirtualRoulette.Core.Services.Authorization;
+using VirtualRoulette.Core.Services.Bet;
+using VirtualRoulette.Core.Services.PasswordHasher;
+using VirtualRoulette.Core.Services.User;
 using VirtualRoulette.Configuration.Settings;
-using VirtualRoulette.Hubs;
-using VirtualRoulette.Persistence;
-using VirtualRoulette.Persistence.InMemoryCache;
-using VirtualRoulette.Persistence.Repositories;
+using VirtualRoulette.Infrastructure.SignalR;
+using VirtualRoulette.Infrastructure.SignalR.Hubs;
+using VirtualRoulette.Infrastructure.Persistence;
+using VirtualRoulette.Infrastructure.Persistence.Caching;
+using VirtualRoulette.Infrastructure.Persistence.Repositories;
 
 namespace VirtualRoulette.Configuration;
 
@@ -19,7 +20,7 @@ public static class ServiceCollectionExtension
     public static void AddServices(this IServiceCollection services)
     {
         services.AddScoped<IAuthorizationService, AuthorizationService>();
-        services.AddScoped<IPasswordHasherService, PasswordHasherServiceService>();
+        services.AddScoped<IPasswordHasherService, PasswordHasherService>();
         services.AddSingleton<IUserActivityTracker, UserActivityTracker>();
         services.AddSingleton<IJackpotHubConnectionTracker, JackpotHubConnectionTracker>();
         services.AddSingleton<IJackpotInMemoryCache, JackpotInMemoryCache>();

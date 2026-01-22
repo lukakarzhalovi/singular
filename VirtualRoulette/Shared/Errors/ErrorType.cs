@@ -1,4 +1,4 @@
-namespace VirtualRoulette.Common.Errors;
+namespace VirtualRoulette.Shared.Errors;
 
 public enum ErrorType
 {

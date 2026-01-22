@@ -1,3 +1,5 @@
+using VirtualRoulette.Shared.Errors;
+
 namespace VirtualRoulette.Common.Errors;
 
 public class Error(string code, string? message, ErrorType errorType)
