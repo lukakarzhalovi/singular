@@ -126,6 +126,7 @@ public static class ServiceCollectionExtension
         services.Configure<ActivityTrackingSettings>(configuration.GetSection("ActivityTracking"));
         services.Configure<JackpotSettings>(configuration.GetSection("Jackpot"));
         services.Configure<ApiSettings>(configuration.GetSection("Api"));
+        services.Configure<FilterSettings>(configuration.GetSection("Filters"));
 
         AddDatabase(services, configuration);
 
