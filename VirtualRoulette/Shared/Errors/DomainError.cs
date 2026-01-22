@@ -11,13 +11,13 @@ public static class DomainError
         );
         
         public static readonly Error Unauthorized = new(
-            "DomainErrors.User.NotFound",
+            "DomainErrors.User.Unauthorized",
             "User Is Unauthorized",
             ErrorType.BadRequest
         );
         
         public static readonly Error IpAddressNotFound = new(
-            "DomainErrors.User.NotFound",
+            "DomainErrors.User.IpAddressNotFound",
             "User ip address not found.",
             ErrorType.BadRequest
         );

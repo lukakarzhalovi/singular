@@ -38,20 +38,21 @@ public class AuthorizationService(
 {
     public async Task<Result> Register(string username, string password)
     {
-        // Validate input
+        // Check if username and password are valid, and username doesn't exist
         var validationResult = await validator.ValidateRegistrationAsync(username, password);
         if (validationResult.IsFailure)
         {
             return Result.Failure(validationResult.FirstError);
         }
 
-        // Hash password and create user
+        // Hash the password before storing it
         var passwordHashResult = passwordHasherService.HashPassword(password);
         if (passwordHashResult.IsFailure)
         {
             return Result.Failure(passwordHashResult.FirstError);
         }
         
+        // Create new user with zero balance
         var user = new UserEntity
         {
             Username = username,
@@ -74,13 +75,14 @@ public class AuthorizationService(
 
     public async Task<Result> SignIn(string username, string password, HttpContext httpContext)
     {
-        // Validate input
+        // Basic validation - check if fields are not empty
         var validationResult = AuthorizationServiceValidator.ValidateSignIn(username, password);
         if (validationResult.IsFailure)
         {
             return Result.Failure(validationResult.FirstError);
         }
 
+        // Find user by username
         var getUserResult = await userRepository.GetByUsernameAsync(username);
         if (getUserResult.IsFailure)
         {
@@ -88,6 +90,7 @@ public class AuthorizationService(
         }
 
         var user = getUserResult.Value;
+        // Verify password matches the stored hash
         var verifyResult = passwordHasherService.VerifyPassword(password, user.PasswordHash);
         if (verifyResult.IsFailure)
         {
@@ -100,6 +103,7 @@ public class AuthorizationService(
             return Result.Failure(DomainError.User.InvalidUser);
         }
 
+        // Create authentication cookie with user info
         var claims = new List<Claim>
         {
             new(ClaimTypes.NameIdentifier, user.Id.ToString()),
@@ -117,6 +121,7 @@ public class AuthorizationService(
             new ClaimsPrincipal(claimsIdentity),
             authProperties);
 
+        // Track user activity for auto sign-out after 5 minutes
         activityTracker.UpdateActivity(user.Id);
 
         return Result.Success();
@@ -124,26 +129,21 @@ public class AuthorizationService(
     
     public async Task<Result> SignOut(int userId, HttpContext httpContext)
     {
-        // Get user's active connection
+        // Disconnect user from SignalR jackpot hub if connected
         var connectionId = connectionTracker.GetConnection(userId);
         
         if (connectionId != null)
         {
             var settings = signalRSettings.Value;
-            // Remove from jackpot group
             await hubContext.Groups.RemoveFromGroupAsync(connectionId, settings.JackpotGroupName);
-            
-            // Send disconnect signal to client
             await hubContext.Clients.Client(connectionId).SendAsync(settings.ForceDisconnectMethod);
-            
-            // Remove connection from tracker
             connectionTracker.RemoveConnection(userId);
         }
         
-        // Sign out from cookie authentication
+        // Clear authentication cookie
         await httpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
         
-        // Remove from activity tracker
+        // Stop tracking user activity
         activityTracker.RemoveUser(userId);
         
         return Result.Success();

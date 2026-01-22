@@ -33,6 +33,7 @@ public class RouletteService(
 {
     public async Task<Result<BetResponse>> Bet(string betString, int userId, string ipAddress)
     {
+        // Check if the bet string is valid using the roulette library
         var ibvr = CheckBets.IsValid(betString);
         if (!ibvr.getIsValid())
         {
@@ -53,6 +54,8 @@ public class RouletteService(
             return Result.Failure<BetResponse>(DomainError.User.NotFound);
         }
 
+        // Early balance check to avoid starting unnecessary transactions
+        // Note: This is just an optimization - the real check happens inside the transaction
         if (user.Balance < betAmountInCents)
         {
             return Result.Failure<BetResponse>(DomainError.Bet.InsufficientBalance);
@@ -62,30 +65,46 @@ public class RouletteService(
         
         try
         {
-            if (user.Balance < betAmountInCents)
+            // Reload user inside transaction to get fresh balance data
+            // This prevents race conditions where another bet could have reduced balance
+            // between the first check and transaction start
+            // In production: Consider using database-level constraints or optimistic concurrency
+            // (e.g., RowVersion/Timestamp) for better performance and reliability
+            var freshUserResult = await userRepository.GetById(userId);
+            if (freshUserResult.IsFailure || freshUserResult.Value == null)
+            {
+                await unitOfWork.RollbackTransactionAsync();
+                return Result.Failure<BetResponse>(DomainError.User.NotFound);
+            }
+            
+            var freshUser = freshUserResult.Value;
+            if (freshUser.Balance < betAmountInCents)
             {
                 await unitOfWork.RollbackTransactionAsync();
                 return Result.Failure<BetResponse>(DomainError.Bet.InsufficientBalance);
             }
+            
+            // Deduct bet amount from user balance
+            freshUser.Balance -= betAmountInCents;
 
-            user.Balance -= betAmountInCents;
-
+            // Generate random winning number (0-36)
             var winningNumber = RandomNumberGenerator.GetInt32(0, 37);
 
+            // Calculate winnings using the roulette library
             var wonAmountInCents = CheckBets.EstimateWin(betString, winningNumber);
             
+            // Add winnings to balance if user won
             if (wonAmountInCents > 0)
             {
-                user.Balance += wonAmountInCents;
+                freshUser.Balance += wonAmountInCents;
             }
             
-            // Jackpot contribution happens on every bet (win or lose)
+            // Update jackpot - 1% of every bet goes to jackpot
             var currentJackpotResult = jackpotInMemoryCache.Get();
             if (currentJackpotResult.IsFailure)
             {
                 logger.LogError("Error getting jackpot with message {Errors}", 
                     currentJackpotResult.Errors.FirstOrDefault()?.Message);
-                // Continue with bet even if jackpot get fails - use 0 as fallback
             }
 
             var currentJackpot = currentJackpotResult.IsSuccess ? currentJackpotResult.Value : 0;
@@ -93,6 +112,7 @@ public class RouletteService(
             var signalRSettingsValue = signalRSettings.Value;
             var jackpotSettingsValue = jackpotSettings.Value;
             var contributionPercentage = jackpotSettingsValue.ContributionPercentage;
+            // Calculate contribution: bet amount * 1% * 10000 (internal format)
             var contributionInCents = betAmountInCents * contributionPercentage;
             var contributionInInternalFormat = (long)(contributionInCents * 10000);
             
@@ -102,15 +122,15 @@ public class RouletteService(
             {
                 logger.LogError("Error setting jackpot with message {Errors}", 
                     setJackpotResult.Errors.FirstOrDefault()?.Message);
-                // Continue with bet even if jackpot set fails
             }
             else
             {
-                // Send updated jackpot value to all connected clients
+                // Notify all connected clients about jackpot update
                 await hubContext.Clients.Group(signalRSettingsValue.JackpotGroupName)
                     .SendAsync(signalRSettingsValue.JackpotUpdatedMethod, newJackpotValue);
             }
             
+            // Save bet record with IP address and timestamp
             var bet = new BetEntity
             {
                 UserId = userId,
@@ -130,6 +150,7 @@ public class RouletteService(
                 return Result.Failure<BetResponse>(createBetResult.Errors);
             }
 
+            // Save all changes to database
             var saveResult = await unitOfWork.SaveChangesAsync();
             if (saveResult.IsFailure)
             {

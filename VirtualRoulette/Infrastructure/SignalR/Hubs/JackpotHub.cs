@@ -20,20 +20,18 @@ public class JackpotHub(
         var userIdResult = UserHelper.GetUserId(Context);
         var settings = signalRSettings.Value;
         
+        // Only proceed if user is authenticated
         if (userIdResult.IsSuccess)
         {
             var userId = userIdResult.Value;
             var connectionId = Context.ConnectionId;
             
-            // Check if user already has a connection
+            // If user already has a connection, disconnect the old one
             var oldConnectionId = connectionTracker.GetConnection(userId);
             
             if (oldConnectionId != null && oldConnectionId != connectionId)
             {
-                // Remove old connection from group
                 await Groups.RemoveFromGroupAsync(oldConnectionId, settings.JackpotGroupName);
-                
-                // Send disconnect signal to old connection
                 await Clients.Client(oldConnectionId).SendAsync(settings.ForceDisconnectMethod);
                 
                 logger.LogInformation(
@@ -41,11 +39,11 @@ public class JackpotHub(
                     userId, oldConnectionId, connectionId);
             }
             
-            // Register new connection
+            // Add user to jackpot group to receive updates
             connectionTracker.SetConnection(userId, connectionId);
-            
             await Groups.AddToGroupAsync(connectionId, settings.JackpotGroupName);
             
+            // Send current jackpot value to newly connected client
             var currentJackpotResult = jackpotInMemoryCache.Get();
             if (currentJackpotResult.IsSuccess)
             {

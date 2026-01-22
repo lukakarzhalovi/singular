@@ -1,5 +1,4 @@
 using Microsoft.EntityFrameworkCore;
-using VirtualRoulette.Shared;
 using VirtualRoulette.Core.Entities;
 using VirtualRoulette.Shared.Errors;
 using VirtualRoulette.Shared.Pagination;
@@ -34,6 +33,8 @@ public class BetRepository(AppDbContext context) : BaseRepository(context), IBet
         {
             var query = Context.Bets.Where(b => b.UserId == userId).AsNoTracking();
             
+            var totalCount = await query.CountAsync();
+            
             var items = await query
                 .OrderByDescending(b => b.CreatedAt)
                 .Skip(skip)
@@ -43,7 +44,7 @@ public class BetRepository(AppDbContext context) : BaseRepository(context), IBet
             var pagedList = new PagedList<Bet>
             {
                 Items = items,
-                TotalCount = items.Count
+                TotalCount = totalCount
             };
             
             return Result.Success(pagedList);

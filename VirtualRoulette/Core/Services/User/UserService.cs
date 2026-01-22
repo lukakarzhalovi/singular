@@ -1,7 +1,5 @@
 using VirtualRoulette.Core.Services.ActivityTracker;
-using VirtualRoulette.Shared;
 using VirtualRoulette.Infrastructure.Persistence.Repositories;
-using VirtualRoulette.Core.Entities;
 using VirtualRoulette.Shared.Errors;
 using VirtualRoulette.Shared.Pagination;
 using VirtualRoulette.Shared.Result;
@@ -45,6 +43,7 @@ public class UserService(
     
     public async Task<Result<PagedList<BetEntity>>> GetBets(int userId, int page, int limit)
     {
+        // Calculate how many records to skip for pagination
         var skip = (page - 1) * limit;
         var userBetResult = await betRepository.GetByUserId(userId, skip, limit);
         
@@ -69,6 +68,7 @@ public class UserService(
             return Result.Failure(DomainError.User.NotFound);
         }
 
+        // Only allow positive amounts
         if (amountInCents <= 0)
         {
             return Result.Failure(DomainError.User.InvalidAmount);
@@ -92,6 +92,7 @@ public class UserService(
             return Result.Failure<List<string>>(allUsersResult.Errors);
         }
 
+        // Filter to only users active in last 5 minutes
         var activeUsernames = allUsersResult.Value
             .Where(user => activityTracker.IsUserActive(user.Id))
             .Select(user => user.Username)

@@ -18,6 +18,9 @@ public class AuthorizationController(
     IAuthorizationService authorizationService,
     IOptions<FilterSettings> filterSettings) : ControllerBase
 {
+    /// <summary>
+    /// Register a new user account
+    /// </summary>
     [HttpPost("register")]
     public async Task<ActionResult<ApiServiceResponse>> Register([FromBody] RegisterRequest request)
     {
@@ -25,6 +28,9 @@ public class AuthorizationController(
         return result.ToActionResult();
     }
 
+    /// <summary>
+    /// Sign in with username and password (creates authentication cookie)
+    /// </summary>
     [HttpPost("signin")]
     public async Task<ActionResult<ApiServiceResponse>> SignIn([FromBody] SignInRequest request)
     {
@@ -32,6 +38,9 @@ public class AuthorizationController(
         return result.ToActionResult();
     }
 
+    /// <summary>
+    /// Sign out current user (requires authentication)
+    /// </summary>
     [HttpPost("signOut")]
     [RequireUserId]
     public new async Task<ActionResult<ApiServiceResponse>> SignOut()

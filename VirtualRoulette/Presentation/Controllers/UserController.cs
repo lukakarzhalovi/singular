@@ -20,6 +20,9 @@ public class UserController(
     IUserService userService,
     IOptions<FilterSettings> filterSettings) : ControllerBase
 {
+    /// <summary>
+    /// Get user's current balance in cents
+    /// </summary>
     [HttpGet("balance")]
     public async Task<ActionResult<ApiServiceResponse<long>>> GetBalance()
     {
@@ -28,6 +31,9 @@ public class UserController(
         return balanceResult.ToActionResult();
     }
     
+    /// <summary>
+    /// Get user's betting history with pagination
+    /// </summary>
     [HttpGet("bets")]
     public async Task<ActionResult<ApiServiceResponse<PagedList<Bet>>>> GetBets(int page, int limit)
     {
@@ -36,6 +42,9 @@ public class UserController(
         return betsResult.ToActionResult();
     }
     
+    /// <summary>
+    /// Add money to user's balance (for testing/admin use)
+    /// </summary>
     [HttpPost("balance")]
     public async Task<ActionResult<ApiServiceResponse>> AddBalance(long amountInCents)
     {
@@ -44,6 +53,9 @@ public class UserController(
         return result.ToActionResult();
     }
 
+    /// <summary>
+    /// Get list of currently active users (signed in within last 5 minutes)
+    /// </summary>
     [HttpGet("active")]
     public async Task<ActionResult<ApiServiceResponse<List<string>>>> GetActiveUsers()
     {

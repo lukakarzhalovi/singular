@@ -1,5 +1,4 @@
 using Microsoft.Extensions.Caching.Memory;
-using VirtualRoulette.Shared;
 using VirtualRoulette.Shared.Errors;
 using VirtualRoulette.Shared.Result;
 
@@ -17,6 +16,9 @@ public class JackpotInMemoryCache(IMemoryCache cache) : IJackpotInMemoryCache
     private readonly object _lockObject = new();
     private const string CacheKey = "Jackpot";
 
+    /// <summary>
+    /// Get current jackpot amount (returns 0 if not set)
+    /// </summary>
     public Result<long> Get()
     {
         try
@@ -30,10 +32,14 @@ public class JackpotInMemoryCache(IMemoryCache cache) : IJackpotInMemoryCache
         }
     }
     
+    /// <summary>
+    /// Update jackpot amount (thread-safe)
+    /// </summary>
     public Result Set(long value)
     {
         try
         {
+            // Use lock to prevent race conditions when multiple bets happen at once
             lock (_lockObject)
             {
                 cache.Set(CacheKey, value);
