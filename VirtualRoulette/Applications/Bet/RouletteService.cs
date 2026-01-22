@@ -67,31 +67,39 @@ public class RouletteService(
 
             var wonAmountInCents = CheckBets.EstimateWin(betString, winningNumber);
             
-            var currentJackpotResult = jackpotInMemoryCache.Get();
-            if (currentJackpotResult.IsFailure)
-            {
-                logger.LogError("Error jackpot get with message {Errors}", 
-                    currentJackpotResult.Errors.FirstOrDefault()?.Message);            
-            }
-
-            var currentJackpot = currentJackpotResult.Value;
-            var contributionInInternalFormat = betAmountInCents * 100;
-            
-            var setJackpotResult = jackpotInMemoryCache.Set(currentJackpot + contributionInInternalFormat);
-            if (setJackpotResult.IsFailure)
-            {
-                logger.LogError("Error jackpot increase with message {Errors}", 
-                    setJackpotResult.Errors.FirstOrDefault()?.Message);
-            }
-
-            await hubContext.Clients.Group("JackpotSubscribers")
-                .SendAsync("JackpotUpdated", currentJackpotResult.Value);
-            
             if (wonAmountInCents > 0)
             {
                 user.Balance += wonAmountInCents;
-            }
+                
+                var currentJackpotResult = jackpotInMemoryCache.Get();
+                if (currentJackpotResult.IsFailure)
+                {
+                    logger.LogError("Error getting jackpot with message {Errors}", 
+                        currentJackpotResult.Errors.FirstOrDefault()?.Message);
+                    // Continue with bet even if jackpot get fails - use 0 as fallback
+                }
 
+                var currentJackpot = currentJackpotResult.IsSuccess ? currentJackpotResult.Value : 0;
+            
+                var onePercentOfBetInCents = betAmountInCents * 0.01m;
+                var contributionInInternalFormat = (long)(onePercentOfBetInCents * 10000);
+                
+                var newJackpotValue = currentJackpot + contributionInInternalFormat;
+                var setJackpotResult = jackpotInMemoryCache.Set(newJackpotValue);
+                if (setJackpotResult.IsFailure)
+                {
+                    logger.LogError("Error setting jackpot with message {Errors}", 
+                        setJackpotResult.Errors.FirstOrDefault()?.Message);
+                    // Continue with bet even if jackpot set fails
+                }
+                else
+                {
+                    // Send updated jackpot value to all connected clients
+                    await hubContext.Clients.Group("JackpotSubscribers")
+                        .SendAsync("JackpotUpdated", newJackpotValue);
+                }
+            }
+            
             var bet = new Models.Entities.Bet
             {
                 UserId = userId,

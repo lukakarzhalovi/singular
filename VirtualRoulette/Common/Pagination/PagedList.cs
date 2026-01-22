@@ -1,7 +1,7 @@
 namespace VirtualRoulette.Common.Pagination;
 
-public class PagedList<T>(List<T> items, long totalCount)
+public class PagedList<T>
 {
-    public long TotalCount { get; } = totalCount;
-    public List<T> Result { get; } = items;
+    public required List<T> Items { get; set; }
+    public required long TotalCount { get; set; }
 }

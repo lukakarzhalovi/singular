@@ -1,7 +1,7 @@
 namespace VirtualRoulette.Models.DTOs;
 
-public class RegisterRequest
+public sealed record RegisterRequest
 {
-    public string Username { get; set; } = string.Empty;
-    public string Password { get; set; } = string.Empty;
+    public required string Username { get; init; }
+    public required string Password { get; init; }
 }

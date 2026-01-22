@@ -1,102 +1,342 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>Jackpot Hub Test</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Virtual Roulette</title>
     <script src="https://cdn.jsdelivr.net/npm/@microsoft/signalr@latest/dist/browser/signalr.min.js"></script>
     <style>
-        body { font-family: Arial, sans-serif; padding: 20px; }
-        .section { margin: 20px 0; padding: 15px; border: 1px solid #ddd; border-radius: 5px; }
-        button { padding: 10px 15px; margin: 5px; cursor: pointer; }
-        input { padding: 8px; margin: 5px; width: 200px; }
-        .status { padding: 10px; margin: 10px 0; border-radius: 5px; }
+        body { 
+            font-family: Arial, sans-serif; 
+            padding: 20px; 
+            max-width: 1400px; 
+            margin: 0 auto;
+        }
+        .main-container {
+            display: flex;
+            gap: 20px;
+        }
+        .main-content {
+            flex: 1;
+        }
+        .sidebar {
+            width: 250px;
+            flex-shrink: 0;
+        }
+        .section { 
+            margin: 20px 0; 
+            padding: 15px; 
+            border: 1px solid #ddd; 
+            border-radius: 5px; 
+            background: #f9f9f9;
+        }
+        .section h2 {
+            margin-top: 0;
+            color: #333;
+        }
+        button { 
+            padding: 10px 15px; 
+            margin: 5px; 
+            cursor: pointer; 
+            background: #007bff;
+            color: white;
+            border: none;
+            border-radius: 4px;
+        }
+        button:hover {
+            background: #0056b3;
+        }
+        button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+        input { 
+            padding: 8px; 
+            margin: 5px; 
+            width: 200px; 
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        .status { 
+            padding: 10px; 
+            margin: 10px 0; 
+            border-radius: 5px; 
+        }
         .success { background-color: #d4edda; color: #155724; }
         .error { background-color: #f8d7da; color: #721c24; }
         .info { background-color: #d1ecf1; color: #0c5460; }
+        .jackpot-display {
+            font-size: 32px;
+            font-weight: bold;
+            text-align: center;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-radius: 10px;
+            margin: 20px 0;
+        }
+        .balance-display {
+            font-size: 24px;
+            font-weight: bold;
+            color: #28a745;
+            padding: 10px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+        }
+        table th, table td {
+            padding: 8px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+        table th {
+            background-color: #f2f2f2;
+            font-weight: bold;
+        }
+        table tr.success {
+            background-color: #d4edda;
+        }
+        table tr.success:hover {
+            background-color: #c3e6cb;
+        }
+        .bet-input {
+            width: 400px;
+            font-family: monospace;
+        }
+        .hidden {
+            display: none;
+        }
+        .active-users-list {
+            max-height: 500px;
+            overflow-y: auto;
+        }
+        .pagination {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            margin: 20px 0;
+            flex-wrap: wrap;
+        }
+        .pagination button {
+            padding: 8px 12px;
+            min-width: 40px;
+        }
+        .pagination button.active {
+            background: #0056b3;
+            font-weight: bold;
+        }
+        .pagination button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+        .pagination-info {
+            margin: 0 10px;
+            color: #666;
+        }
+        .pagination-select {
+            padding: 6px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            margin-left: 10px;
+        }
+        .active-user-item {
+            padding: 8px;
+            margin: 4px 0;
+            background: #e7f3ff;
+            border-left: 3px solid #007bff;
+            border-radius: 4px;
+        }
+        .active-users-count {
+            font-weight: bold;
+            color: #007bff;
+            margin-bottom: 10px;
+        }
     </style>
 </head>
 <body>
-<h1>Jackpot Hub Test</h1>
+<h1>Virtual Roulette</h1>
 
-<!-- Registration Section -->
-<div class="section">
-    <h2>1. Registration</h2>
-    <div>
-        <input type="text" id="regUsername" placeholder="Username" value="">
-        <input type="password" id="regPassword" placeholder="Password" value="">
-        <button onclick="register()">Register</button>
-    </div>
-    <div id="registerStatus" class="status"></div>
-</div>
+<div class="main-container">
+    <div class="main-content">
 
 <!-- Authentication Section -->
 <div class="section">
-    <h2>2. Authentication</h2>
-    <div>
-        <input type="text" id="username" placeholder="Username" value="testuser">
-        <input type="password" id="password" placeholder="Password" value="TestPassword123!">
-        <button onclick="signIn()">Sign In</button>
+    <h2>Authentication</h2>
+    <div id="authSection">
+        <div>
+            <input type="text" id="regUsername" placeholder="Username" value="">
+            <input type="password" id="regPassword" placeholder="Password" value="">
+            <button onclick="register()">Register</button>
+        </div>
+        <div style="margin-top: 10px;">
+            <input type="text" id="username" placeholder="Username" value="testuser">
+            <input type="password" id="password" placeholder="Password" value="TestPassword123!">
+            <button onclick="signIn()">Sign In</button>
+        </div>
+        <div id="authStatus" class="status"></div>
+    </div>
+    <div id="signedInSection" class="hidden">
+        <p>Signed in as: <strong id="signedInUser"></strong></p>
         <button onclick="signOut()">Sign Out</button>
     </div>
-    <div id="authStatus" class="status"></div>
 </div>
 
-<!-- Connection Section -->
+<!-- Jackpot Display -->
 <div class="section">
-    <h2>3. SignalR Connection</h2>
-    <button onclick="connectHub()">Connect to Hub</button>
-    <button onclick="disconnectHub()">Disconnect</button>
-    <div id="connectionStatus" class="status info">Not connected</div>
+    <h2>Jackpot</h2>
+    <div id="jackpot" class="jackpot-display">$0.00</div>
+    <div id="connectionStatus" class="status info" style="text-align: center;">Connecting...</div>
 </div>
 
-<!-- Jackpot Section -->
+<!-- User Balance Section -->
 <div class="section">
-    <h2>4. Jackpot</h2>
-    <div id="jackpot" class="status info">Jackpot: 0</div>
+    <h2>Balance</h2>
+    <div class="balance-display" id="balanceDisplay">$0.00</div>
     <div>
-        <input type="number" id="amountInput" placeholder="Amount in cents" value="100">
-        <button onclick="increaseJackpot()">Increase Jackpot</button>
-        <button onclick="getCurrentJackpot()">Get Current</button>
+        <input type="number" id="addBalanceInput" placeholder="Amount in cents" value="10000" min="1">
+        <button onclick="addBalance()" id="addBalanceBtn" disabled>Add Balance</button>
+        <button onclick="refreshBalance()" id="refreshBalanceBtn" disabled>Refresh Balance</button>
     </div>
 </div>
 
-<!-- Logs Section -->
+<!-- Make Bet Section -->
 <div class="section">
-    <h2>5. Logs</h2>
-    <div id="logs" style="max-height: 300px; overflow-y: auto; background: #f5f5f5; padding: 10px; font-family: monospace; font-size: 12px;"></div>
+    <h2>Make a Bet</h2>
+    <p>Enter bet string (JSON format):</p>
+    <div>
+        <input type="text" id="betInput" class="bet-input" placeholder='[{"T": "v", "I": 20, "C": 1, "K": 1}]' value='[{"T": "v", "I": 20, "C": 1, "K": 1}]'>
+        <button onclick="makeBet()" id="makeBetBtn" disabled>Place Bet</button>
+    </div>
+    <div id="betResult" class="status" style="margin-top: 10px;"></div>
+</div>
+
+<!-- Bet History Section -->
+<div class="section">
+    <h2>Bet History</h2>
+    <div style="margin-bottom: 10px;">
+        <label for="itemsPerPage">Items per page: </label>
+        <select id="itemsPerPage" class="pagination-select" onchange="changeItemsPerPage()" disabled>
+            <option value="10">10</option>
+            <option value="20" selected>20</option>
+            <option value="50">50</option>
+            <option value="100">100</option>
+        </select>
+    </div>
+    <div id="betsContainer" style="margin-top: 10px;"></div>
+    <div id="paginationContainer" class="pagination"></div>
+</div>
+    </div>
+
+    <!-- Active Users Sidebar -->
+    <div class="sidebar">
+        <div class="section">
+            <h2>Active Users</h2>
+            <div class="active-users-count" id="activeUsersCount">0 users online</div>
+            <div class="active-users-list" id="activeUsersList">
+                <p style="color: #666;">Loading...</p>
+            </div>
+        </div>
+    </div>
 </div>
 
 <script>
     let connection = null;
-    const API_BASE = 'https://localhost:44346'; // Your API URL
+    const API_BASE = 'https://localhost:44346'; // Backend API URL
+    let isSignedIn = false;
+    let activeUsersInterval = null;
 
     function log(message, type = 'info') {
-        const logsDiv = document.getElementById('logs');
-        const timestamp = new Date().toLocaleTimeString();
-        const color = type === 'error' ? 'red' : type === 'success' ? 'green' : 'black';
-        logsDiv.innerHTML += `<div style="color: ${color}">[${timestamp}] ${message}</div>`;
-        logsDiv.scrollTop = logsDiv.scrollHeight;
-        console.log(message);
+        console.log(`[${new Date().toLocaleTimeString()}] ${message}`);
+    }
+
+    // Global fetch wrapper to handle 401 Unauthorized
+    async function apiFetch(url, options = {}) {
+        const response = await fetch(url, options);
+        
+        if (response.status === 401) {
+            // Session expired - automatically sign out
+            handleSessionExpired();
+            throw new Error('Session expired. You have been signed out.');
+        }
+        
+        return response;
+    }
+
+    function handleSessionExpired() {
+        if (isSignedIn) {
+            // Update UI to signed out state
+            updateUIForAuthState(false);
+            
+            // Show message to user
+            const statusDiv = document.getElementById('authStatus');
+            statusDiv.textContent = '⚠️ Your session has expired. You have been signed out.';
+            statusDiv.className = 'status error';
+            
+            // Disconnect hub if connected
+            if (connection) {
+                try {
+                    connection.stop();
+                } catch (e) {
+                    // Ignore
+                }
+                connection = null;
+            }
+            
+            document.getElementById('connectionStatus').textContent = 'Disconnected (session expired)';
+            
+            // Clear UI data
+            document.getElementById('balanceDisplay').textContent = '$0.00';
+            document.getElementById('betsContainer').innerHTML = '';
+            document.getElementById('betResult').textContent = '';
+            document.getElementById('jackpot').textContent = '$0.00';
+            
+            log('Session expired - user signed out automatically', 'error');
+        }
+    }
+
+    function updateUIForAuthState(signedIn) {
+        isSignedIn = signedIn;
+        document.getElementById('authSection').classList.toggle('hidden', signedIn);
+        document.getElementById('signedInSection').classList.toggle('hidden', !signedIn);
+        
+        const buttons = ['addBalanceBtn', 'refreshBalanceBtn', 'makeBetBtn'];
+        buttons.forEach(btnId => {
+            document.getElementById(btnId).disabled = !signedIn;
+        });
+        
+        // Enable/disable items per page selector
+        document.getElementById('itemsPerPage').disabled = !signedIn;
+        
+        if (!signedIn) {
+            document.getElementById('balanceDisplay').textContent = '$0.00';
+            document.getElementById('betsContainer').innerHTML = '';
+            document.getElementById('paginationContainer').innerHTML = '';
+            document.getElementById('betResult').textContent = '';
+            document.getElementById('activeUsersList').innerHTML = '<p style="color: #666;">Not signed in</p>';
+            document.getElementById('activeUsersCount').textContent = '0 users online';
+            currentPage = 1;
+            totalBets = 0;
+        }
     }
 
     async function register() {
         const username = document.getElementById('regUsername').value;
         const password = document.getElementById('regPassword').value;
-        const statusDiv = document.getElementById('registerStatus');
+        const statusDiv = document.getElementById('authStatus');
 
         if (!username || !password) {
             statusDiv.textContent = '❌ Please enter both username and password';
             statusDiv.className = 'status error';
-            log('Registration failed: Username and password are required', 'error');
             return;
         }
 
         try {
-            log('Attempting to register...');
-            const response = await fetch(`${API_BASE}/api/v1/Authorize/register`, {
+            const response = await apiFetch(`${API_BASE}/api/v1/Authorize/register`, {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
+                headers: { 'Content-Type': 'application/json' },
                 credentials: 'include',
                 body: JSON.stringify({ username, password })
             });
@@ -106,19 +346,15 @@
             if (response.ok || response.status === 201) {
                 statusDiv.textContent = '✅ Registered successfully! You can now sign in.';
                 statusDiv.className = 'status success';
-                log('Registered successfully', 'success');
-                // Auto-fill the sign-in form with the registered credentials
                 document.getElementById('username').value = username;
                 document.getElementById('password').value = password;
             } else {
                 statusDiv.textContent = `❌ Error: ${result.message || 'Registration failed'}`;
                 statusDiv.className = 'status error';
-                log(`Registration failed: ${result.message}`, 'error');
             }
         } catch (error) {
             statusDiv.textContent = `❌ Error: ${error.message}`;
             statusDiv.className = 'status error';
-            log(`Registration error: ${error.message}`, 'error');
         }
     }
 
@@ -128,13 +364,10 @@
         const statusDiv = document.getElementById('authStatus');
 
         try {
-            log('Attempting to sign in...');
-            const response = await fetch(`${API_BASE}/api/v1/Authorize/signin`, {
+            const response = await apiFetch(`${API_BASE}/api/v1/Authorize/signin`, {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                credentials: 'include', // Important: sends cookies
+                headers: { 'Content-Type': 'application/json' },
+                credentials: 'include',
                 body: JSON.stringify({ username, password })
             });
 
@@ -143,186 +376,417 @@
             if (response.ok) {
                 statusDiv.textContent = '✅ Signed in successfully!';
                 statusDiv.className = 'status success';
-                log('Signed in successfully', 'success');
+                document.getElementById('signedInUser').textContent = username;
+                updateUIForAuthState(true);
+                
+                // Automatically connect to hub
+                await connectHub();
+                await refreshBalance();
+                await loadActiveUsers();
+                startActiveUsersPolling();
+                // Load bets automatically on sign in
+                await loadBets(1);
             } else {
                 statusDiv.textContent = `❌ Error: ${result.message || 'Sign in failed'}`;
                 statusDiv.className = 'status error';
-                log(`Sign in failed: ${result.message}`, 'error');
             }
         } catch (error) {
             statusDiv.textContent = `❌ Error: ${error.message}`;
             statusDiv.className = 'status error';
-            log(`Sign in error: ${error.message}`, 'error');
         }
     }
 
     async function signOut() {
         try {
-            log('Signing out...');
-            const response = await fetch(`${API_BASE}/api/v1/Authorize/signOut`, {
+            const response = await apiFetch(`${API_BASE}/api/v1/Authorize/signOut`, {
                 method: 'POST',
                 credentials: 'include'
             });
 
             if (response.ok) {
+                updateUIForAuthState(false);
                 document.getElementById('authStatus').textContent = 'Signed out';
                 document.getElementById('authStatus').className = 'status info';
-                log('Signed out successfully', 'success');
+                
                 if (connection) {
-                    await connection.stop();
+                    try {
+                        await connection.stop();
+                    } catch (e) {
+                        // Ignore
+                    }
                     connection = null;
                 }
+                document.getElementById('connectionStatus').textContent = 'Disconnected';
             }
+            
+            // Stop active users polling
+            stopActiveUsersPolling();
         } catch (error) {
             log(`Sign out error: ${error.message}`, 'error');
         }
     }
 
-    async function connectHub() {
-        if (connection && connection.state === signalR.HubConnectionState.Connected) {
-            log('Already connected!', 'info');
+    async function loadActiveUsers() {
+        if (!isSignedIn) {
             return;
         }
 
-        // First verify authentication by checking if we can access an authenticated endpoint
         try {
-            log('Verifying authentication before connecting...');
-            const authCheck = await fetch(`${API_BASE}/api/v1/Jackpot/current`, {
+            const response = await apiFetch(`${API_BASE}/api/v1/User/active`, {
                 credentials: 'include'
             });
-            
-            if (!authCheck.ok) {
-                if (authCheck.status === 401) {
-                    const errorMsg = '❌ Not authenticated. Please sign in first!';
-                    document.getElementById('connectionStatus').textContent = errorMsg;
-                    document.getElementById('connectionStatus').className = 'status error';
-                    log(errorMsg, 'error');
+
+            const result = await response.json();
+
+            if (response.ok) {
+                const usernames = result.data || [];
+                const container = document.getElementById('activeUsersList');
+                const countDiv = document.getElementById('activeUsersCount');
+
+                countDiv.textContent = `${usernames.length} user${usernames.length !== 1 ? 's' : ''} online`;
+
+                if (usernames.length === 0) {
+                    container.innerHTML = '<p style="color: #666;">No active users</p>';
+                } else {
+                    let html = '';
+                    usernames.forEach(username => {
+                        html += `<div class="active-user-item">${username}</div>`;
+                    });
+                    container.innerHTML = html;
+                }
+            } else {
+                if (result.message && result.message.includes('Session expired')) {
+                    // Already handled by apiFetch
                     return;
                 }
-                throw new Error(`Authentication check failed: ${authCheck.status}`);
+                document.getElementById('activeUsersList').innerHTML = '<p style="color: #666;">Error loading users</p>';
             }
-            log('Authentication verified', 'success');
         } catch (error) {
-            const errorMsg = `❌ Authentication check failed: ${error.message}. Please sign in first!`;
-            document.getElementById('connectionStatus').textContent = errorMsg;
-            document.getElementById('connectionStatus').className = 'status error';
-            log(errorMsg, 'error');
+            if (error.message && error.message.includes('Session expired')) {
+                // Already handled by apiFetch
+                return;
+            }
+            document.getElementById('activeUsersList').innerHTML = '<p style="color: #666;">Error loading users</p>';
+        }
+    }
+
+    function startActiveUsersPolling() {
+        stopActiveUsersPolling(); // Clear any existing interval
+        activeUsersInterval = setInterval(() => {
+            if (isSignedIn) {
+                loadActiveUsers();
+            }
+        }, 10000); // Update every 10 seconds
+    }
+
+    function stopActiveUsersPolling() {
+        if (activeUsersInterval) {
+            clearInterval(activeUsersInterval);
+            activeUsersInterval = null;
+        }
+    }
+
+    async function connectHub() {
+        if (connection && connection.state === signalR.HubConnectionState.Connected) {
             return;
         }
 
+        if (connection && connection.state !== signalR.HubConnectionState.Connected) {
+            try {
+                await connection.stop();
+            } catch (e) {
+                // Ignore
+            }
+            connection = null;
+        }
+
         try {
-            log('Connecting to SignalR hub...');
             connection = new signalR.HubConnectionBuilder()
                 .withUrl(`${API_BASE}/jackpot-hub`, {
-                    withCredentials: true, // Important: sends cookies
+                    withCredentials: true,
                     skipNegotiation: false,
                     transport: signalR.HttpTransportType.WebSockets | signalR.HttpTransportType.LongPolling
                 })
                 .withAutomaticReconnect()
                 .build();
 
-            // Handle jackpot updates
             connection.on("JackpotUpdated", (jackpotAmount) => {
-                const jackpotDiv = document.getElementById('jackpot');
-                const cents = jackpotAmount / 10000;
-                jackpotDiv.textContent = `Jackpot: ${jackpotAmount} (internal) = ${cents} cents`;
-                jackpotDiv.className = 'status success';
-                log(`🎰 Jackpot Updated: ${jackpotAmount} (${cents} cents)`, 'success');
+                const dollars = jackpotAmount / 1000000;
+                document.getElementById('jackpot').textContent = `$${dollars.toFixed(4)}`;
+                log(`Jackpot Updated: $${dollars.toFixed(4)}`);
             });
 
-            // Handle connection events
+            connection.on("ForceDisconnect", () => {
+                document.getElementById('connectionStatus').textContent = 'Disconnected by server';
+                if (connection) {
+                    connection.stop().then(() => {
+                        connection = null;
+                    }).catch(() => {});
+                }
+            });
+
             connection.onreconnecting(() => {
                 document.getElementById('connectionStatus').textContent = 'Reconnecting...';
-                document.getElementById('connectionStatus').className = 'status info';
-                log('Reconnecting to hub...', 'info');
             });
 
             connection.onreconnected(() => {
                 document.getElementById('connectionStatus').textContent = '✅ Connected';
-                document.getElementById('connectionStatus').className = 'status success';
-                log('Reconnected to hub', 'success');
             });
 
             connection.onclose(() => {
-                document.getElementById('connectionStatus').textContent = '❌ Disconnected';
-                document.getElementById('connectionStatus').className = 'status error';
-                log('Disconnected from hub', 'error');
+                document.getElementById('connectionStatus').textContent = 'Disconnected';
+                connection = null;
             });
 
             await connection.start();
             document.getElementById('connectionStatus').textContent = '✅ Connected';
-            document.getElementById('connectionStatus').className = 'status success';
-            log('Connected to Jackpot Hub!', 'success');
         } catch (error) {
-            document.getElementById('connectionStatus').textContent = `❌ Error: ${error.message}`;
-            document.getElementById('connectionStatus').className = 'status error';
+            document.getElementById('connectionStatus').textContent = `❌ Connection Error: ${error.message}`;
             log(`Connection error: ${error.message}`, 'error');
-            console.error('Connection error details:', error);
         }
     }
 
-    async function disconnectHub() {
-        if (connection) {
-            await connection.stop();
-            connection = null;
-            document.getElementById('connectionStatus').textContent = 'Disconnected';
-            document.getElementById('connectionStatus').className = 'status info';
-            log('Disconnected from hub', 'info');
-        }
-    }
-
-    async function increaseJackpot() {
-        const amount = parseInt(document.getElementById('amountInput').value);
-
-        if (!amount || amount <= 0) {
-            log('Please enter a valid amount', 'error');
-            return;
-        }
-
+    async function refreshBalance() {
         try {
-            log(`Increasing jackpot by ${amount} cents...`);
-            const response = await fetch(`${API_BASE}/api/v1/Jackpot/increase`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                credentials: 'include',
-                body: JSON.stringify({ amountInCents: amount })
-            });
-
-            const result = await response.json();
-
-            if (response.ok) {
-                log(`✅ Jackpot increased: ${result.message}`, 'success');
-            } else {
-                log(`❌ Error: ${result.message}`, 'error');
-            }
-        } catch (error) {
-            log(`Error increasing jackpot: ${error.message}`, 'error');
-        }
-    }
-
-    async function getCurrentJackpot() {
-        try {
-            log('Getting current jackpot...');
-            const response = await fetch(`${API_BASE}/api/v1/Jackpot/current`, {
+            const response = await apiFetch(`${API_BASE}/api/v1/User/balance`, {
                 credentials: 'include'
             });
 
             const result = await response.json();
 
             if (response.ok) {
-                const cents = result.jackpotAmount / 10000;
-                document.getElementById('jackpot').textContent =
-                    `Jackpot: ${result.jackpotAmount} (internal) = ${cents} cents`;
-                log(`Current jackpot: ${result.jackpotAmount} (${cents} cents)`, 'success');
+                const balance = result.data;
+                const dollars = balance / 100;
+                document.getElementById('balanceDisplay').textContent = `$${dollars.toFixed(2)}`;
             } else {
-                log(`Error: ${result.message}`, 'error');
+                log(`Error getting balance: ${result.message}`, 'error');
             }
         } catch (error) {
-            log(`Error getting jackpot: ${error.message}`, 'error');
+            if (error.message.includes('Session expired')) {
+                // Already handled by handleSessionExpired
+                return;
+            }
+            log(`Error getting balance: ${error.message}`, 'error');
         }
     }
+
+    async function addBalance() {
+        const amount = parseInt(document.getElementById('addBalanceInput').value);
+
+        if (!amount || amount <= 0) {
+            alert('Please enter a valid amount');
+            return;
+        }
+
+        try {
+            const response = await apiFetch(`${API_BASE}/api/v1/User/balance?amountInCents=${amount}`, {
+                method: 'POST',
+                credentials: 'include'
+            });
+
+            const result = await response.json();
+
+            if (response.ok) {
+                await refreshBalance();
+                alert(`✅ Balance added: $${(amount / 100).toFixed(2)}`);
+            } else {
+                alert(`❌ Error: ${result.message}`);
+            }
+        } catch (error) {
+            if (error.message.includes('Session expired')) {
+                // Already handled by handleSessionExpired
+                return;
+            }
+            alert(`Error: ${error.message}`);
+        }
+    }
+
+    async function makeBet() {
+        const betString = document.getElementById('betInput').value.trim();
+        const resultDiv = document.getElementById('betResult');
+
+        if (!betString) {
+            resultDiv.textContent = '❌ Please enter a bet string';
+            resultDiv.className = 'status error';
+            return;
+        }
+
+        try {
+            resultDiv.textContent = 'Placing bet...';
+            resultDiv.className = 'status info';
+
+            const response = await apiFetch(`${API_BASE}/api/v1/Roulette/bet`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                credentials: 'include',
+                body: JSON.stringify(betString)
+            });
+
+            const result = await response.json();
+
+            if (response.ok) {
+                const betResult = result.data;
+                const wonAmount = betResult.wonAmountInCents / 100;
+                const message = betResult.wonAmountInCents > 0 
+                    ? `✅ You won! Winning number: ${betResult.winningNumber}, Amount: $${wonAmount.toFixed(2)}`
+                    : `❌ You lost. Winning number: ${betResult.winningNumber}`;
+                
+                resultDiv.textContent = message;
+                resultDiv.className = betResult.wonAmountInCents > 0 ? 'status success' : 'status error';
+                
+                await refreshBalance();
+            } else {
+                resultDiv.textContent = `❌ Error: ${result.message}`;
+                resultDiv.className = 'status error';
+            }
+        } catch (error) {
+            if (error.message.includes('Session expired')) {
+                // Already handled by handleSessionExpired
+                return;
+            }
+            resultDiv.textContent = `❌ Error: ${error.message}`;
+            resultDiv.className = 'status error';
+        }
+    }
+
+    let currentPage = 1;
+    let itemsPerPage = 20;
+    let totalBets = 0;
+
+    function changeItemsPerPage() {
+        const select = document.getElementById('itemsPerPage');
+        itemsPerPage = parseInt(select.value);
+        currentPage = 1; // Reset to first page when changing items per page
+        loadBets(currentPage);
+    }
+
+    function goToPage(page) {
+        if (page < 1 || page > getTotalPages()) return;
+        currentPage = page;
+        loadBets(page);
+    }
+
+    function getTotalPages() {
+        return Math.ceil(totalBets / itemsPerPage);
+    }
+
+    function renderPagination() {
+        const container = document.getElementById('paginationContainer');
+        const totalPages = getTotalPages();
+        
+        if (totalPages <= 1) {
+            container.innerHTML = '';
+            return;
+        }
+
+        let html = '';
+        
+        // Previous button
+        html += `<button onclick="goToPage(${currentPage - 1})" ${currentPage === 1 ? 'disabled' : ''}>Previous</button>`;
+        
+        // Page numbers
+        const maxVisiblePages = 7;
+        let startPage = Math.max(1, currentPage - Math.floor(maxVisiblePages / 2));
+        let endPage = Math.min(totalPages, startPage + maxVisiblePages - 1);
+        
+        // Adjust if we're near the end
+        if (endPage - startPage < maxVisiblePages - 1) {
+            startPage = Math.max(1, endPage - maxVisiblePages + 1);
+        }
+        
+        // First page and ellipsis
+        if (startPage > 1) {
+            html += `<button onclick="goToPage(1)" ${currentPage === 1 ? 'class="active"' : ''}>1</button>`;
+            if (startPage > 2) {
+                html += `<span class="pagination-info">...</span>`;
+            }
+        }
+        
+        // Page number buttons
+        for (let i = startPage; i <= endPage; i++) {
+            html += `<button onclick="goToPage(${i})" ${currentPage === i ? 'class="active"' : ''}>${i}</button>`;
+        }
+        
+        // Last page and ellipsis
+        if (endPage < totalPages) {
+            if (endPage < totalPages - 1) {
+                html += `<span class="pagination-info">...</span>`;
+            }
+            html += `<button onclick="goToPage(${totalPages})" ${currentPage === totalPages ? 'class="active"' : ''}>${totalPages}</button>`;
+        }
+        
+        // Next button
+        html += `<button onclick="goToPage(${currentPage + 1})" ${currentPage === totalPages ? 'disabled' : ''}>Next</button>`;
+        
+        // Pagination info
+        const startItem = totalBets === 0 ? 0 : (currentPage - 1) * itemsPerPage + 1;
+        const endItem = Math.min(currentPage * itemsPerPage, totalBets);
+        html += `<span class="pagination-info">Showing ${startItem}-${endItem} of ${totalBets}</span>`;
+        
+        container.innerHTML = html;
+    }
+
+    async function loadBets(page = 1) {
+        const container = document.getElementById('betsContainer');
+        const paginationContainer = document.getElementById('paginationContainer');
+
+        try {
+            container.innerHTML = 'Loading...';
+            paginationContainer.innerHTML = '';
+
+            const response = await apiFetch(`${API_BASE}/api/v1/User/bets?page=${page}&limit=${itemsPerPage}`, {
+                credentials: 'include'
+            });
+
+            const result = await response.json();
+
+            if (response.ok) {
+                const pagedData = result.data;
+                const bets = pagedData?.result || [];
+                totalBets = pagedData?.totalCount || 0;
+                
+                if (bets.length === 0) {
+                    container.innerHTML = '<p>No bets found.</p>';
+                    renderPagination();
+                    return;
+                }
+
+                let html = '<table><thead><tr><th>Date</th><th>Bet Amount</th><th>Winning Number</th><th>Won Amount</th><th>Spin ID</th></tr></thead><tbody>';
+                
+                bets.forEach(bet => {
+                    const date = new Date(bet.createdAt).toLocaleString();
+                    const betAmount = (bet.betAmountInCents / 100).toFixed(2);
+                    const wonAmount = (bet.wonAmountInCents / 100).toFixed(2);
+                    const wonClass = bet.wonAmountInCents > 0 ? 'success' : '';
+                    html += `<tr class="${wonClass}">
+                        <td>${date}</td>
+                        <td>$${betAmount}</td>
+                        <td>${bet.winningNumber}</td>
+                        <td>$${wonAmount}</td>
+                        <td>${bet.spinId}</td>
+                    </tr>`;
+                });
+                
+                html += '</tbody></table>';
+                container.innerHTML = html;
+                
+                renderPagination();
+            } else {
+                container.innerHTML = `<p>Error: ${result.message}</p>`;
+                paginationContainer.innerHTML = '';
+            }
+        } catch (error) {
+            if (error.message.includes('Session expired')) {
+                // Already handled by handleSessionExpired
+                return;
+            }
+            container.innerHTML = `<p>Error: ${error.message}</p>`;
+            paginationContainer.innerHTML = '';
+        }
+    }
+
+    // Initialize
+    updateUIForAuthState(false);
 </script>
 </body>
 </html>

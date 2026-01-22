@@ -7,7 +7,6 @@ public interface IUserActivityTracker
     void UpdateActivity(int userId);
     bool IsUserActive(int userId);
     void RemoveUser(int userId);
-    DateTime? GetLastActivity(int userId);
 }
 
 public class UserActivityTracker(IMemoryCache cache) : IUserActivityTracker
@@ -37,18 +36,6 @@ public class UserActivityTracker(IMemoryCache cache) : IUserActivityTracker
     public void RemoveUser(int userId)
     {
         cache.Remove(GetCacheKey(userId));
-    }
-
-
-    public DateTime? GetLastActivity(int userId)
-    {
-        
-        if (cache.TryGetValue(GetCacheKey(userId), out DateTime lastActivity))
-        {
-            return lastActivity;
-        }
-        
-        return null;
     }
 
     private static string GetCacheKey(int userId) => $"{CacheKeyPrefix}{userId}";

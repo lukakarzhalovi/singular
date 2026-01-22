@@ -38,4 +38,11 @@ public class UserController(IUserService userService) : ControllerBase
         var result = await userService.AddBalance(userId, amountInCents);
         return result.ToActionResult();
     }
+
+    [HttpGet("active")]
+    public async Task<ActionResult<ApiServiceResponse<List<string>>>> GetActiveUsers()
+    {
+        var result = await userService.GetActiveUsersAsync();
+        return result.ToActionResult();
+    }
 }

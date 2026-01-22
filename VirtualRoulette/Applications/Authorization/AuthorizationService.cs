@@ -1,9 +1,12 @@
 using System.Security.Claims;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.AspNetCore.SignalR;
 using VirtualRoulette.Applications.ActivityTracker;
 using VirtualRoulette.Applications.PasswordHasher;
 using VirtualRoulette.Common;
+using VirtualRoulette.Common.Errors;
+using VirtualRoulette.Hubs;
 using VirtualRoulette.Persistence.Repositories;
 
 namespace VirtualRoulette.Applications.Authorization;
@@ -14,7 +17,7 @@ public interface IAuthorizationService
     
     Task<Result> SignIn(string username, string password, HttpContext httpContext);
     
-    Result SignOut(int userId);
+    Task<Result> SignOut(int userId, HttpContext httpContext);
 }
 
 public class AuthorizationService(
@@ -22,7 +25,9 @@ public class AuthorizationService(
     IPasswordHasherService passwordHasherService,
     AuthorizationServiceValidator validator,
     IUserActivityTracker activityTracker,
-    IUnitOfWork unitOfWork) : IAuthorizationService
+    IUnitOfWork unitOfWork,
+    IHubContext<JackpotHub> hubContext,
+    IJackpotHubConnectionTracker connectionTracker) : IAuthorizationService
 {
     public async Task<Result> Register(string username, string password)
     {
@@ -63,7 +68,7 @@ public class AuthorizationService(
     public async Task<Result> SignIn(string username, string password, HttpContext httpContext)
     {
         // Validate input
-        var validationResult = validator.ValidateSignIn(username, password);
+        var validationResult = AuthorizationServiceValidator.ValidateSignIn(username, password);
         if (validationResult.IsFailure)
         {
             return Result.Failure(validationResult.FirstError);
@@ -85,7 +90,7 @@ public class AuthorizationService(
         var verify = verifyResult.Value;
         if (!verify)
         {
-            return Result.Failure("Invalid username or password.");
+            return Result.Failure(DomainError.User.InvalidUser);
         }
 
         var claims = new List<Claim>
@@ -100,7 +105,6 @@ public class AuthorizationService(
             IsPersistent = false
         };
 
-        // Sign in user
         await httpContext.SignInAsync(
             CookieAuthenticationDefaults.AuthenticationScheme,
             new ClaimsPrincipal(claimsIdentity),
@@ -111,16 +115,29 @@ public class AuthorizationService(
         return Result.Success();
     }
     
-    public Result SignOut(int userId)
+    public async Task<Result> SignOut(int userId, HttpContext httpContext)
     {
-        try
+        // Get user's active connection
+        var connectionId = connectionTracker.GetConnection(userId);
+        
+        if (connectionId != null)
         {
-            activityTracker.RemoveUser(userId);
-            return Result.Success();
+            // Remove from jackpot group
+            await hubContext.Groups.RemoveFromGroupAsync(connectionId, "JackpotSubscribers");
+            
+            // Send disconnect signal to client
+            await hubContext.Clients.Client(connectionId).SendAsync("ForceDisconnect");
+            
+            // Remove connection from tracker
+            connectionTracker.RemoveConnection(userId);
         }
-        catch (Exception e)
-        {
-            return Result.Failure(new Common.Errors.Error("Authorization.SignOutError", e.Message, Common.Errors.ErrorType.InternalServerError));
-        }
+        
+        // Sign out from cookie authentication
+        await httpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
+        
+        // Remove from activity tracker
+        activityTracker.RemoveUser(userId);
+        
+        return Result.Success();
     }
 }

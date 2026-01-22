@@ -1,3 +1,4 @@
+using VirtualRoulette.Applications.ActivityTracker;
 using VirtualRoulette.Common;
 using VirtualRoulette.Common.Errors;
 using VirtualRoulette.Common.Pagination;
@@ -12,12 +13,15 @@ public interface IUserService
     Task<Result<PagedList<Models.Entities.Bet>>> GetBets(int userId, int page, int limit);
     
     Task<Result> AddBalance(int userId, long amountInCents);
+    
+    Task<Result<List<string>>> GetActiveUsersAsync();
 }
 
 public class UserService(
     IUserRepository userRepository,
     IBetRepository betRepository,
-    IUnitOfWork unitOfWork
+    IUnitOfWork unitOfWork,
+    IUserActivityTracker activityTracker
 ) : IUserService
 {
     public async Task<Result<long>> GetBalance(int userId)
@@ -74,5 +78,23 @@ public class UserService(
         return saveResult.IsFailure 
             ? Result.Failure(saveResult.Errors) 
             : Result.Success();
+    }
+
+    public async Task<Result<List<string>>> GetActiveUsersAsync()
+    {
+        var allUsersResult = await userRepository.GetAllUsersAsync();
+        
+        if (allUsersResult.IsFailure)
+        {
+            return Result.Failure<List<string>>(allUsersResult.Errors);
+        }
+
+        var activeUsernames = allUsersResult.Value
+            .Where(user => activityTracker.IsUserActive(user.Id))
+            .Select(user => user.Username)
+            .OrderBy(username => username)
+            .ToList();
+
+        return Result.Success(activeUsernames);
     }
 }

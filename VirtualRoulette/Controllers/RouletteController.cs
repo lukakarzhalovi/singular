@@ -15,7 +15,7 @@ namespace VirtualRoulette.Controllers;
 public class RouletteController(IRouletteService rouletteService) : ControllerBase
 {
     [HttpPost("bet")]
-    public async Task<ActionResult<ApiServiceResponse<BetResponse>>> Bet(string bet)
+    public async Task<ActionResult<ApiServiceResponse<BetResponse>>> Bet([FromBody] string bet)
     {
         var userId = (int)HttpContext.Items["UserId"]!;
         var ipAddress = (string)HttpContext.Items["IpAddress"]!;

@@ -1,6 +1,6 @@
 namespace VirtualRoulette.Models.DTOs;
 
-public class BetResponse
+public sealed record BetResponse
 {
     public bool Status { get; set; }
    

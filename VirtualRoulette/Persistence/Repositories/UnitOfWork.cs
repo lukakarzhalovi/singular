@@ -10,7 +10,6 @@ public interface IUnitOfWork
     Task BeginTransactionAsync();
     Task CommitTransactionAsync();
     Task RollbackTransactionAsync();
-    void Dispose();
 }
 
 public sealed class UnitOfWork(AppDbContext context) : BaseRepository(context), IUnitOfWork
@@ -74,10 +73,5 @@ public sealed class UnitOfWork(AppDbContext context) : BaseRepository(context), 
         {
             await _transaction.RollbackAsync();
         }
-    }
-
-    public void Dispose()
-    {
-        _transaction?.Dispose();
     }
 }

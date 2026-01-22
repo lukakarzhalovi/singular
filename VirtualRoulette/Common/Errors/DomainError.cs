@@ -27,6 +27,24 @@ public static class DomainError
             "Amount must be greater than zero.",
             ErrorType.BadRequest
         );
+        
+        public static readonly Error InvalidUser = new(
+            "DomainErrors.User.InvalidUser",
+            "Invalid username or password.",
+            ErrorType.BadRequest
+        );
+    }
+    
+    public static class Authorization
+    {
+        public static Error Error(string methodName, string message)
+        {
+            return new Error(
+                "DomainErrors.Authorization.Error",
+                $"AuthorizationError in {methodName} with message {message}",
+                ErrorType.InternalServerError
+            );
+        }
     }
     
     public static class DbError
@@ -35,7 +53,7 @@ public static class DomainError
         {
             return new Error(
                 "DbError.Error",
-                $"Database error in {repositoryName}: {message}",
+                $"Database error in {repositoryName} with message {message}",
                 ErrorType.InternalServerError
             );
         }

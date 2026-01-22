@@ -16,15 +16,11 @@ builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowLocalhost", policy =>
     {
-        policy.WithOrigins(
-                "http://localhost:48958", 
-                "https://localhost:44346",
-                "http://localhost:63352",  // IntelliJ/Rider internal server
-                "http://localhost:63343"   // IntelliJ/Rider internal server (frontend)
-            )
+        // Update this port if you serve the HTML file from a different port
+        policy.WithOrigins("http://localhost:3000","http://localhost:63342")
             .AllowAnyMethod()
             .AllowAnyHeader()
-            .AllowCredentials(); // Important for SignalR and cookies
+            .AllowCredentials();
     });
 });
 
@@ -64,7 +60,6 @@ app.UseSession();
 app.MapControllers();
 
 // Map SignalR Hub for real-time jackpot updates
-// Clients connect to: /jackpot-hub
 app.MapHub<JackpotHub>("/jackpot-hub");
 
 app.Run();

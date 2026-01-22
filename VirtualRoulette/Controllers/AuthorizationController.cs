@@ -28,10 +28,10 @@ public class AuthorizationController(IAuthorizationService authorizationService)
 
     [HttpPost("signOut")]
     [RequireUserId]
-    public new ActionResult<ApiServiceResponse> SignOut()
+    public new async Task<ActionResult<ApiServiceResponse>> SignOut()
     {
         var userId = (int)HttpContext.Items["UserId"]!;
-        var result = authorizationService.SignOut(userId);
+        var result = await authorizationService.SignOut(userId, HttpContext);
         return result.ToActionResult();
     }
 }

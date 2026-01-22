@@ -11,6 +11,7 @@ public interface IUserRepository
     Task<Result<User?>> GetById(int id);
     Task<Result<User>> CreateAsync(User user);
     Task<Result<bool>> UsernameExistsAsync(string username);
+    Task<Result<List<User>>> GetAllUsersAsync();
 }
 
 public class UserRepository(AppDbContext context) : BaseRepository(context), IUserRepository
@@ -72,6 +73,19 @@ public class UserRepository(AppDbContext context) : BaseRepository(context), IUs
         catch (Exception e)
         {
             return Result.Failure<bool>(DomainError.DbError.Error(nameof(UserRepository), e.Message));
+        }
+    }
+
+    public async Task<Result<List<User>>> GetAllUsersAsync()
+    {
+        try
+        {
+            var users = await Context.Users.ToListAsync();
+            return Result.Success(users);
+        }
+        catch (Exception e)
+        {
+            return Result.Failure<List<User>>(DomainError.DbError.Error(nameof(UserRepository), e.Message));
         }
     }
 }
