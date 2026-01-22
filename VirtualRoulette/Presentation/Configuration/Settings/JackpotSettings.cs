@@ -1,4 +1,4 @@
-namespace VirtualRoulette.Configuration.Settings;
+namespace VirtualRoulette.Presentation.Configuration.Settings;
 
 public sealed record JackpotSettings
 {

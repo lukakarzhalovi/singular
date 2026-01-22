@@ -6,14 +6,13 @@ using VirtualRoulette.Core.Services.Authorization;
 using VirtualRoulette.Core.Services.Bet;
 using VirtualRoulette.Core.Services.PasswordHasher;
 using VirtualRoulette.Core.Services.User;
-using VirtualRoulette.Configuration.Settings;
-using VirtualRoulette.Infrastructure.SignalR;
-using VirtualRoulette.Infrastructure.SignalR.Hubs;
 using VirtualRoulette.Infrastructure.Persistence;
 using VirtualRoulette.Infrastructure.Persistence.Caching;
 using VirtualRoulette.Infrastructure.Persistence.Repositories;
+using VirtualRoulette.Infrastructure.SignalR;
+using VirtualRoulette.Presentation.Configuration.Settings;
 
-namespace VirtualRoulette.Configuration;
+namespace VirtualRoulette.Presentation.Configuration;
 
 public static class ServiceCollectionExtension
 {

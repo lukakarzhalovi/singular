@@ -1,7 +1,7 @@
-using VirtualRoulette.Configuration;
-using VirtualRoulette.Configuration.Settings;
-using VirtualRoulette.Hubs;
-using VirtualRoulette.Middleware;
+using VirtualRoulette.Infrastructure.SignalR.Hubs;
+using VirtualRoulette.Presentation.Configuration;
+using VirtualRoulette.Presentation.Configuration.Settings;
+using VirtualRoulette.Presentation.Middleware;
 
 var builder = WebApplication.CreateBuilder(args);
 

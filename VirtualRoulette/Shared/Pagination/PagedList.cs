@@ -1,4 +1,4 @@
-namespace VirtualRoulette.Common.Pagination;
+namespace VirtualRoulette.Shared.Pagination;
 
 public class PagedList<T>
 {
