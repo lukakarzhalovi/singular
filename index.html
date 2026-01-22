@@ -234,9 +234,10 @@
     <div class="sidebar">
         <div class="section">
             <h2>Active Users</h2>
+            <button id="getActiveUsersBtn" class="btn" onclick="loadActiveUsers()" disabled style="margin-bottom: 10px;">Get Active Users</button>
             <div class="active-users-count" id="activeUsersCount">0 users online</div>
             <div class="active-users-list" id="activeUsersList">
-                <p style="color: #666;">Loading...</p>
+                <p style="color: #666;">Not signed in</p>
             </div>
         </div>
     </div>
@@ -246,7 +247,6 @@
     let connection = null;
     const API_BASE = 'https://localhost:44346'; // Backend API URL
     let isSignedIn = false;
-    let activeUsersInterval = null;
 
     function log(message, type = 'info') {
         console.log(`[${new Date().toLocaleTimeString()}] ${message}`);
@@ -302,7 +302,7 @@
         document.getElementById('authSection').classList.toggle('hidden', signedIn);
         document.getElementById('signedInSection').classList.toggle('hidden', !signedIn);
         
-        const buttons = ['addBalanceBtn', 'refreshBalanceBtn', 'makeBetBtn'];
+        const buttons = ['addBalanceBtn', 'refreshBalanceBtn', 'makeBetBtn', 'getActiveUsersBtn'];
         buttons.forEach(btnId => {
             document.getElementById(btnId).disabled = !signedIn;
         });
@@ -382,8 +382,6 @@
                 // Automatically connect to hub
                 await connectHub();
                 await refreshBalance();
-                await loadActiveUsers();
-                startActiveUsersPolling();
                 // Load bets automatically on sign in
                 await loadBets(1);
             } else {
@@ -418,9 +416,6 @@
                 }
                 document.getElementById('connectionStatus').textContent = 'Disconnected';
             }
-            
-            // Stop active users polling
-            stopActiveUsersPolling();
         } catch (error) {
             log(`Sign out error: ${error.message}`, 'error');
         }
@@ -467,22 +462,6 @@
                 return;
             }
             document.getElementById('activeUsersList').innerHTML = '<p style="color: #666;">Error loading users</p>';
-        }
-    }
-
-    function startActiveUsersPolling() {
-        stopActiveUsersPolling(); // Clear any existing interval
-        activeUsersInterval = setInterval(() => {
-            if (isSignedIn) {
-                loadActiveUsers();
-            }
-        }, 10000); // Update every 10 seconds
-    }
-
-    function stopActiveUsersPolling() {
-        if (activeUsersInterval) {
-            clearInterval(activeUsersInterval);
-            activeUsersInterval = null;
         }
     }
 
@@ -742,8 +721,8 @@
 
             if (response.ok) {
                 const pagedData = result.data;
-                const bets = pagedData?.result || [];
-                totalBets = pagedData?.totalCount || 0;
+                const bets = pagedData?.items || pagedData?.Items || [];
+                totalBets = pagedData?.totalCount || pagedData?.TotalCount || 0;
                 
                 if (bets.length === 0) {
                     container.innerHTML = '<p>No bets found.</p>';

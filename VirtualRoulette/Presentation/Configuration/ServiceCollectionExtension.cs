@@ -50,22 +50,7 @@ public static class ServiceCollectionExtension
             });
         });
     }
-        public static void AddCors(this IServiceCollection services, IConfiguration configuration)
-    {
-        var corsSettings = configuration.GetSection("Cors").Get<CorsSettings>() 
-                           ?? throw new InvalidOperationException("CORS settings are required");
-        services.AddCors(options =>
-        {
-            options.AddPolicy(corsSettings.PolicyName, policy =>
-            {
-                policy.WithOrigins(corsSettings.AllowedOrigins.ToArray())
-                    .AllowAnyMethod()
-                    .AllowAnyHeader()
-                    .AllowCredentials();
-            });
-        });
-    }
-    
+
     public static void AddAuthentification(this IServiceCollection services, IConfiguration configuration)
     {
         var authSettings = configuration.GetSection("Authentication").Get<AuthenticationSettings>() 

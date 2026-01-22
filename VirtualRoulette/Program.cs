@@ -13,17 +13,22 @@ builder.Services.AddSettings(builder.Configuration);
 builder.Services.AddAuthentification(builder.Configuration);
 builder.Services.AddServices();
 builder.Services.AddRateLimiter(builder.Configuration);
-builder.Services.AddCors(builder.Configuration);
-
+builder.Services.AddCors(options =>
+{
+    options.AddDefaultPolicy(policy =>
+    {
+        policy.SetIsOriginAllowed(_ => true)
+            .AllowAnyMethod()
+            .AllowAnyHeader()
+            .AllowCredentials();
+    });
+});
 
 builder.Services.AddControllers();
 
 var app = builder.Build();
 
-var corsSettingsResolved = builder.Configuration.GetSection("Cors").Get<CorsSettings>() 
-    ?? throw new InvalidOperationException("CORS settings are required");
-
-app.UseCors(corsSettingsResolved.PolicyName);
+app.UseCors();
 
 if (app.Environment.IsDevelopment())
 {

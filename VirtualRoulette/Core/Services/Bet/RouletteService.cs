@@ -77,37 +77,38 @@ public class RouletteService(
             if (wonAmountInCents > 0)
             {
                 user.Balance += wonAmountInCents;
-                
-                var currentJackpotResult = jackpotInMemoryCache.Get();
-                if (currentJackpotResult.IsFailure)
-                {
-                    logger.LogError("Error getting jackpot with message {Errors}", 
-                        currentJackpotResult.Errors.FirstOrDefault()?.Message);
-                    // Continue with bet even if jackpot get fails - use 0 as fallback
-                }
-
-                var currentJackpot = currentJackpotResult.IsSuccess ? currentJackpotResult.Value : 0;
+            }
             
-                var signalRSettingsValue = signalRSettings.Value;
-                var jackpotSettingsValue = jackpotSettings.Value;
-                var contributionPercentage = jackpotSettingsValue.ContributionPercentage;
-                var contributionInCents = betAmountInCents * contributionPercentage;
-                var contributionInInternalFormat = (long)(contributionInCents * 10000);
-                
-                var newJackpotValue = currentJackpot + contributionInInternalFormat;
-                var setJackpotResult = jackpotInMemoryCache.Set(newJackpotValue);
-                if (setJackpotResult.IsFailure)
-                {
-                    logger.LogError("Error setting jackpot with message {Errors}", 
-                        setJackpotResult.Errors.FirstOrDefault()?.Message);
-                    // Continue with bet even if jackpot set fails
-                }
-                else
-                {
-                    // Send updated jackpot value to all connected clients
-                    await hubContext.Clients.Group(signalRSettingsValue.JackpotGroupName)
-                        .SendAsync(signalRSettingsValue.JackpotUpdatedMethod, newJackpotValue);
-                }
+            // Jackpot contribution happens on every bet (win or lose)
+            var currentJackpotResult = jackpotInMemoryCache.Get();
+            if (currentJackpotResult.IsFailure)
+            {
+                logger.LogError("Error getting jackpot with message {Errors}", 
+                    currentJackpotResult.Errors.FirstOrDefault()?.Message);
+                // Continue with bet even if jackpot get fails - use 0 as fallback
+            }
+
+            var currentJackpot = currentJackpotResult.IsSuccess ? currentJackpotResult.Value : 0;
+        
+            var signalRSettingsValue = signalRSettings.Value;
+            var jackpotSettingsValue = jackpotSettings.Value;
+            var contributionPercentage = jackpotSettingsValue.ContributionPercentage;
+            var contributionInCents = betAmountInCents * contributionPercentage;
+            var contributionInInternalFormat = (long)(contributionInCents * 10000);
+            
+            var newJackpotValue = currentJackpot + contributionInInternalFormat;
+            var setJackpotResult = jackpotInMemoryCache.Set(newJackpotValue);
+            if (setJackpotResult.IsFailure)
+            {
+                logger.LogError("Error setting jackpot with message {Errors}", 
+                    setJackpotResult.Errors.FirstOrDefault()?.Message);
+                // Continue with bet even if jackpot set fails
+            }
+            else
+            {
+                // Send updated jackpot value to all connected clients
+                await hubContext.Clients.Group(signalRSettingsValue.JackpotGroupName)
+                    .SendAsync(signalRSettingsValue.JackpotUpdatedMethod, newJackpotValue);
             }
             
             var bet = new BetEntity

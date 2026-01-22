@@ -6,19 +6,19 @@ public static class DomainError
     {
         public static readonly Error NotFound = new(
             "DomainErrors.User.NotFound",
-            "DomainErrors_Combinations_RequiredPoint",
+            "User Not Found",
             ErrorType.BadRequest
         );
         
         public static readonly Error Unauthorized = new(
             "DomainErrors.User.NotFound",
-            "DomainErrors_Combinations_RequiredPoint",
+            "User Is Unauthorized",
             ErrorType.BadRequest
         );
         
         public static readonly Error IpAddressNotFound = new(
             "DomainErrors.User.NotFound",
-            "DomainErrors_Combinations_RequiredPoint",
+            "User ip address not found.",
             ErrorType.BadRequest
         );
         
