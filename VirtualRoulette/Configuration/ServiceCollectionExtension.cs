@@ -1,10 +1,12 @@
 using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
 using VirtualRoulette.Applications.ActivityTracker;
 using VirtualRoulette.Applications.Authorization;
 using VirtualRoulette.Applications.Bet;
 using VirtualRoulette.Applications.PasswordHasher;
 using VirtualRoulette.Applications.User;
+using VirtualRoulette.Configuration.Settings;
 using VirtualRoulette.Hubs;
 using VirtualRoulette.Persistence;
 using VirtualRoulette.Persistence.InMemoryCache;
@@ -33,15 +35,61 @@ public static class ServiceCollectionExtension
         services.AddScoped<IBetRepository, BetRepository>();
     }
     
-    public static void AddAuthentification(this IServiceCollection services)
+    public static void AddRateLimiter(this IServiceCollection services, IConfiguration configuration)
     {
+        var rateLimitingSettings = configuration.GetSection("RateLimiting").Get<RateLimitingSettings>() 
+                                   ?? throw new InvalidOperationException("Rate limiting settings are required");
+        services.AddRateLimiter(options =>
+        {
+            options.AddFixedWindowLimiter(rateLimitingSettings.PolicyName, limiterOptions =>
+            {
+                limiterOptions.PermitLimit = rateLimitingSettings.PermitLimit;
+                limiterOptions.Window = TimeSpan.FromSeconds(rateLimitingSettings.WindowSeconds);
+                limiterOptions.QueueProcessingOrder = System.Threading.RateLimiting.QueueProcessingOrder.OldestFirst;
+                limiterOptions.QueueLimit = rateLimitingSettings.QueueLimit;
+            });
+        });
+    }
+        public static void AddCors(this IServiceCollection services, IConfiguration configuration)
+    {
+        var corsSettings = configuration.GetSection("Cors").Get<CorsSettings>() 
+                           ?? throw new InvalidOperationException("CORS settings are required");
+        services.AddCors(options =>
+        {
+            options.AddPolicy(corsSettings.PolicyName, policy =>
+            {
+                policy.WithOrigins(corsSettings.AllowedOrigins.ToArray())
+                    .AllowAnyMethod()
+                    .AllowAnyHeader()
+                    .AllowCredentials();
+            });
+        });
+    }
+    
+    public static void AddAuthentification(this IServiceCollection services, IConfiguration configuration)
+    {
+        var authSettings = configuration.GetSection("Authentication").Get<AuthenticationSettings>() 
+            ?? throw new InvalidOperationException("Authentication settings are required");
+
         services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
             .AddCookie(options =>
             {
-                options.Cookie.HttpOnly = true;
-                options.Cookie.SecurePolicy = CookieSecurePolicy.Always;
-                options.Cookie.SameSite = SameSiteMode.None;
-                options.LoginPath = "/api/v1/Authorize/signin";
+                options.Cookie.HttpOnly = authSettings.Cookie.HttpOnly;
+                options.Cookie.SecurePolicy = authSettings.Cookie.SecurePolicy switch
+                {
+                    "Always" => CookieSecurePolicy.Always,
+                    "SameAsRequest" => CookieSecurePolicy.SameAsRequest,
+                    "None" => CookieSecurePolicy.None,
+                    _ => CookieSecurePolicy.Always
+                };
+                options.Cookie.SameSite = authSettings.Cookie.SameSite switch
+                {
+                    "None" => SameSiteMode.None,
+                    "Lax" => SameSiteMode.Lax,
+                    "Strict" => SameSiteMode.Strict,
+                    _ => SameSiteMode.None
+                };
+                options.LoginPath = authSettings.LoginPath;
         
                 options.Events.OnRedirectToLogin = context =>
                 {
@@ -55,21 +103,30 @@ public static class ServiceCollectionExtension
                     return Task.CompletedTask;
                 };
 
-                options.ExpireTimeSpan = TimeSpan.FromMinutes(5);
-                options.SlidingExpiration = true;
+                options.ExpireTimeSpan = TimeSpan.FromMinutes(authSettings.ExpirationMinutes);
+                options.SlidingExpiration = authSettings.SlidingExpiration;
                 
             });
         
         services.AddSession(options =>
         {
-            options.IdleTimeout = TimeSpan.FromMinutes(5);
-            options.Cookie.HttpOnly = true;
-            options.Cookie.IsEssential = true;
+            options.IdleTimeout = TimeSpan.FromMinutes(authSettings.SessionIdleTimeoutMinutes);
+            options.Cookie.HttpOnly = authSettings.Cookie.HttpOnly;
+            options.Cookie.IsEssential = authSettings.Cookie.IsEssential;
         });
     }
 
     public static void AddSettings(this IServiceCollection services, IConfiguration configuration)
     {
+        services.Configure<CorsSettings>(configuration.GetSection("Cors"));
+        services.Configure<RateLimitingSettings>(configuration.GetSection("RateLimiting"));
+        services.Configure<AuthenticationSettings>(configuration.GetSection("Authentication"));
+        services.Configure<DatabaseSettings>(configuration.GetSection("Database"));
+        services.Configure<SignalRSettings>(configuration.GetSection("SignalR"));
+        services.Configure<ActivityTrackingSettings>(configuration.GetSection("ActivityTracking"));
+        services.Configure<JackpotSettings>(configuration.GetSection("Jackpot"));
+        services.Configure<ApiSettings>(configuration.GetSection("Api"));
+
         AddDatabase(services, configuration);
 
         services.AddMemoryCache();
@@ -79,8 +136,10 @@ public static class ServiceCollectionExtension
 
     private static void AddDatabase(IServiceCollection services, IConfiguration configuration)
     {
-        //todo add configuration
+        var databaseSettings = configuration.GetSection("Database").Get<DatabaseSettings>() 
+            ?? throw new InvalidOperationException("Database settings are required");
+        
         services.AddDbContext<AppDbContext>(options =>
-            options.UseInMemoryDatabase("VirtualRouletteDb"));
+            options.UseInMemoryDatabase(databaseSettings.DatabaseName));
     }
 }

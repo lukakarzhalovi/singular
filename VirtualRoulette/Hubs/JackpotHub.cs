@@ -1,6 +1,8 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.SignalR;
+using Microsoft.Extensions.Options;
 using VirtualRoulette.Common.Helpers;
+using VirtualRoulette.Configuration.Settings;
 using VirtualRoulette.Persistence.InMemoryCache;
 
 namespace VirtualRoulette.Hubs;
@@ -9,12 +11,14 @@ namespace VirtualRoulette.Hubs;
 public class JackpotHub(
     IJackpotInMemoryCache jackpotInMemoryCache,
     IJackpotHubConnectionTracker connectionTracker,
-    ILogger<JackpotHub> logger)
+    ILogger<JackpotHub> logger,
+    IOptions<SignalRSettings> signalRSettings)
     : Hub
 {
     public override async Task OnConnectedAsync()
     {
         var userIdResult = UserHelper.GetUserId(Context);
+        var settings = signalRSettings.Value;
         
         if (userIdResult.IsSuccess)
         {
@@ -27,10 +31,10 @@ public class JackpotHub(
             if (oldConnectionId != null && oldConnectionId != connectionId)
             {
                 // Remove old connection from group
-                await Groups.RemoveFromGroupAsync(oldConnectionId, "JackpotSubscribers");
+                await Groups.RemoveFromGroupAsync(oldConnectionId, settings.JackpotGroupName);
                 
                 // Send disconnect signal to old connection
-                await Clients.Client(oldConnectionId).SendAsync("ForceDisconnect");
+                await Clients.Client(oldConnectionId).SendAsync(settings.ForceDisconnectMethod);
                 
                 logger.LogInformation(
                     "User {UserId} has existing connection {OldConnectionId}. Disconnecting old connection and replacing with {NewConnectionId}",
@@ -40,12 +44,12 @@ public class JackpotHub(
             // Register new connection
             connectionTracker.SetConnection(userId, connectionId);
             
-            await Groups.AddToGroupAsync(connectionId, "JackpotSubscribers");
+            await Groups.AddToGroupAsync(connectionId, settings.JackpotGroupName);
             
             var currentJackpotResult = jackpotInMemoryCache.Get();
             if (currentJackpotResult.IsSuccess)
             {
-                await Clients.Caller.SendAsync("JackpotUpdated", currentJackpotResult.Value);
+                await Clients.Caller.SendAsync(settings.JackpotUpdatedMethod, currentJackpotResult.Value);
             }
             
             logger.LogInformation("User {UserId} connected to JackpotHub. ConnectionId: {ConnectionId}", 
@@ -69,7 +73,7 @@ public class JackpotHub(
             connectionTracker.RemoveConnection(userId);
             
             // Remove from group
-            await Groups.RemoveFromGroupAsync(connectionId, "JackpotSubscribers");
+            await Groups.RemoveFromGroupAsync(connectionId, signalRSettings.Value.JackpotGroupName);
             
             logger.LogInformation("User {UserId} disconnected from JackpotHub. ConnectionId: {ConnectionId}", 
                 userId, connectionId);

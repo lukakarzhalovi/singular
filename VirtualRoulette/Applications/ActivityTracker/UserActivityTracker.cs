@@ -1,4 +1,6 @@
 using Microsoft.Extensions.Caching.Memory;
+using Microsoft.Extensions.Options;
+using VirtualRoulette.Configuration.Settings;
 
 namespace VirtualRoulette.Applications.ActivityTracker;
 
@@ -9,10 +11,12 @@ public interface IUserActivityTracker
     void RemoveUser(int userId);
 }
 
-public class UserActivityTracker(IMemoryCache cache) : IUserActivityTracker
+public class UserActivityTracker(
+    IMemoryCache cache,
+    IOptions<ActivityTrackingSettings> settings) : IUserActivityTracker
 {
-    private readonly TimeSpan _inactivityTimeout = TimeSpan.FromMinutes(5);
-    private const string CacheKeyPrefix = "user_activity";
+    private readonly TimeSpan _inactivityTimeout = TimeSpan.FromMinutes(settings.Value.InactivityTimeoutMinutes);
+    private readonly string _cacheKeyPrefix = settings.Value.CacheKeyPrefix;
 
     public void UpdateActivity(int userId)
     {
@@ -38,5 +42,5 @@ public class UserActivityTracker(IMemoryCache cache) : IUserActivityTracker
         cache.Remove(GetCacheKey(userId));
     }
 
-    private static string GetCacheKey(int userId) => $"{CacheKeyPrefix}{userId}";
+    private string GetCacheKey(int userId) => $"{_cacheKeyPrefix}{userId}";
 }

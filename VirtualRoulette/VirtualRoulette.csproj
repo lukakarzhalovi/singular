@@ -18,10 +18,4 @@
         <HintPath>..\lib\ge.singular.roulette.dll</HintPath>
       </Reference>
     </ItemGroup>
-
-    <ItemGroup>
-      <Folder Include="Persistence\InMemoryCache\" />
-      <Folder Include="Settings\" />
-    </ItemGroup>
-
 </Project>

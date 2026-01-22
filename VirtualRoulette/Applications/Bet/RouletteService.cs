@@ -1,8 +1,10 @@
 using System.Security.Cryptography;
 using ge.singular.roulette;
 using Microsoft.AspNetCore.SignalR;
+using Microsoft.Extensions.Options;
 using VirtualRoulette.Common;
 using VirtualRoulette.Common.Errors;
+using VirtualRoulette.Configuration.Settings;
 using VirtualRoulette.Hubs;
 using VirtualRoulette.Models.DTOs;
 using VirtualRoulette.Persistence.InMemoryCache;
@@ -21,7 +23,9 @@ public class RouletteService(
     IUnitOfWork unitOfWork,
     IJackpotInMemoryCache jackpotInMemoryCache,
     IHubContext<JackpotHub> hubContext,
-    ILogger<RouletteService> logger)
+    ILogger<RouletteService> logger,
+    IOptions<SignalRSettings> signalRSettings,
+    IOptions<JackpotSettings> jackpotSettings)
     : IRouletteService
 {
     public async Task<Result<BetResponse>> Bet(string betString, int userId, string ipAddress)
@@ -81,8 +85,11 @@ public class RouletteService(
 
                 var currentJackpot = currentJackpotResult.IsSuccess ? currentJackpotResult.Value : 0;
             
-                var onePercentOfBetInCents = betAmountInCents * 0.01m;
-                var contributionInInternalFormat = (long)(onePercentOfBetInCents * 10000);
+                var signalRSettingsValue = signalRSettings.Value;
+                var jackpotSettingsValue = jackpotSettings.Value;
+                var contributionPercentage = jackpotSettingsValue.ContributionPercentage;
+                var contributionInCents = betAmountInCents * contributionPercentage;
+                var contributionInInternalFormat = (long)(contributionInCents * 10000);
                 
                 var newJackpotValue = currentJackpot + contributionInInternalFormat;
                 var setJackpotResult = jackpotInMemoryCache.Set(newJackpotValue);
@@ -95,8 +102,8 @@ public class RouletteService(
                 else
                 {
                     // Send updated jackpot value to all connected clients
-                    await hubContext.Clients.Group("JackpotSubscribers")
-                        .SendAsync("JackpotUpdated", newJackpotValue);
+                    await hubContext.Clients.Group(signalRSettingsValue.JackpotGroupName)
+                        .SendAsync(signalRSettingsValue.JackpotUpdatedMethod, newJackpotValue);
                 }
             }
             

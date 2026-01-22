@@ -2,10 +2,12 @@ using System.Security.Claims;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.SignalR;
+using Microsoft.Extensions.Options;
 using VirtualRoulette.Applications.ActivityTracker;
 using VirtualRoulette.Applications.PasswordHasher;
 using VirtualRoulette.Common;
 using VirtualRoulette.Common.Errors;
+using VirtualRoulette.Configuration.Settings;
 using VirtualRoulette.Hubs;
 using VirtualRoulette.Persistence.Repositories;
 
@@ -27,7 +29,8 @@ public class AuthorizationService(
     IUserActivityTracker activityTracker,
     IUnitOfWork unitOfWork,
     IHubContext<JackpotHub> hubContext,
-    IJackpotHubConnectionTracker connectionTracker) : IAuthorizationService
+    IJackpotHubConnectionTracker connectionTracker,
+    IOptions<SignalRSettings> signalRSettings) : IAuthorizationService
 {
     public async Task<Result> Register(string username, string password)
     {
@@ -122,11 +125,12 @@ public class AuthorizationService(
         
         if (connectionId != null)
         {
+            var settings = signalRSettings.Value;
             // Remove from jackpot group
-            await hubContext.Groups.RemoveFromGroupAsync(connectionId, "JackpotSubscribers");
+            await hubContext.Groups.RemoveFromGroupAsync(connectionId, settings.JackpotGroupName);
             
             // Send disconnect signal to client
-            await hubContext.Clients.Client(connectionId).SendAsync("ForceDisconnect");
+            await hubContext.Clients.Client(connectionId).SendAsync(settings.ForceDisconnectMethod);
             
             // Remove connection from tracker
             connectionTracker.RemoveConnection(userId);

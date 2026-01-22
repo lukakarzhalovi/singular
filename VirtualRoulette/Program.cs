@@ -1,5 +1,5 @@
-using Microsoft.AspNetCore.RateLimiting;
 using VirtualRoulette.Configuration;
+using VirtualRoulette.Configuration.Settings;
 using VirtualRoulette.Hubs;
 using VirtualRoulette.Middleware;
 
@@ -10,38 +10,21 @@ builder.Services.AddSwaggerGen();
 
 builder.Services.AddRepositories();
 builder.Services.AddSettings(builder.Configuration);
-builder.Services.AddAuthentification();
+builder.Services.AddAuthentification(builder.Configuration);
 builder.Services.AddServices();
-builder.Services.AddCors(options =>
-{
-    options.AddPolicy("AllowLocalhost", policy =>
-    {
-        // Update this port if you serve the HTML file from a different port
-        policy.WithOrigins("http://localhost:3000","http://localhost:63342")
-            .AllowAnyMethod()
-            .AllowAnyHeader()
-            .AllowCredentials();
-    });
-});
+builder.Services.AddRateLimiter(builder.Configuration);
+builder.Services.AddCors(builder.Configuration);
 
-
-
-builder.Services.AddRateLimiter(options =>
-{
-    options.AddFixedWindowLimiter("fixed", limiterOptions =>
-    {
-        limiterOptions.PermitLimit = 10;
-        limiterOptions.Window = TimeSpan.FromSeconds(10);
-        limiterOptions.QueueProcessingOrder = System.Threading.RateLimiting.QueueProcessingOrder.OldestFirst;
-        limiterOptions.QueueLimit = 2;
-    });
-});
 
 builder.Services.AddControllers();
 
 var app = builder.Build();
 
-app.UseCors("AllowLocalhost");
+var corsSettingsResolved = builder.Configuration.GetSection("Cors").Get<CorsSettings>() 
+    ?? throw new InvalidOperationException("CORS settings are required");
+
+app.UseCors(corsSettingsResolved.PolicyName);
+
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
@@ -60,6 +43,9 @@ app.UseSession();
 app.MapControllers();
 
 // Map SignalR Hub for real-time jackpot updates
-app.MapHub<JackpotHub>("/jackpot-hub");
+var signalRSettingsResolved = builder.Configuration.GetSection("SignalR").Get<SignalRSettings>() 
+    ?? throw new InvalidOperationException("SignalR settings are required");
+
+app.MapHub<JackpotHub>(signalRSettingsResolved.HubPath);
 
 app.Run();
