@@ -26,6 +26,13 @@ A .NET 8 backend API for a virtual roulette game. Players can register, sign in,
 4. The API will be available at the configured port (check `launchSettings.json`)
 5. Swagger UI is available at `/swagger` in development mode
 
+### Running the UI
+
+1. Make sure the backend API is running first
+2. Open `index.html` in your web browser (double-click the file or open it from your file explorer)
+3. The UI will connect to the backend API automatically
+4. If your backend runs on a different port, update the `API_BASE` constant in `index.html` (line 248) to match your backend URL
+
 ### API Endpoints
 
 **Authentication** (`/api/v1/Authorize`):
