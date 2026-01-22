@@ -10,6 +10,7 @@ using VirtualRoulette.Infrastructure.Persistence.Repositories;
 using VirtualRoulette.Core.Entities;
 using VirtualRoulette.Presentation.Configuration.Settings;
 using VirtualRoulette.Shared.Errors;
+using VirtualRoulette.Shared.Result;
 using BetEntity = VirtualRoulette.Core.Entities.Bet;
 
 namespace VirtualRoulette.Core.Services.Bet;

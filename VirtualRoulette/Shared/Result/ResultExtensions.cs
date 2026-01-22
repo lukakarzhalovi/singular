@@ -2,11 +2,11 @@ using Microsoft.AspNetCore.Mvc;
 using VirtualRoulette.Core.DTOs.Responses;
 using VirtualRoulette.Shared.Errors;
 
-namespace VirtualRoulette.Shared;
+namespace VirtualRoulette.Shared.Result;
 
 public static class ResultExtensions
 {
-    private static ApiServiceResponse ToApiResponse(this Result result, int? successStatusCode = null)
+    private static ApiServiceResponse ToApiResponse(this Shared.Result.Result result, int? successStatusCode = null)
     {
         if (result.IsSuccess)
         {
@@ -58,7 +58,7 @@ public static class ResultExtensions
         };
     }
     
-    public static ActionResult<ApiServiceResponse> ToActionResult(this Result result)
+    public static ActionResult<ApiServiceResponse> ToActionResult(this Shared.Result.Result result)
     {
         var response = result.ToApiResponse();
         return new ObjectResult(response) { StatusCode = response.StatusCode };

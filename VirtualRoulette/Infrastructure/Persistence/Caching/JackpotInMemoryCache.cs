@@ -1,6 +1,7 @@
 using Microsoft.Extensions.Caching.Memory;
 using VirtualRoulette.Shared;
 using VirtualRoulette.Shared.Errors;
+using VirtualRoulette.Shared.Result;
 
 namespace VirtualRoulette.Infrastructure.Persistence.Caching;
 

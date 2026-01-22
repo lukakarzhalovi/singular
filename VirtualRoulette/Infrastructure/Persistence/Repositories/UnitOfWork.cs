@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore.Storage;
 using VirtualRoulette.Shared;
 using VirtualRoulette.Shared.Errors;
+using VirtualRoulette.Shared.Result;
 
 namespace VirtualRoulette.Infrastructure.Persistence.Repositories;
 

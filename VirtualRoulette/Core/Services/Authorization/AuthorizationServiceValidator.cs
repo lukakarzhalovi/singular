@@ -1,5 +1,6 @@
 using VirtualRoulette.Shared;
 using VirtualRoulette.Infrastructure.Persistence.Repositories;
+using VirtualRoulette.Shared.Result;
 
 namespace VirtualRoulette.Core.Services.Authorization;
 

@@ -2,6 +2,7 @@ using System.Security.Cryptography;
 using System.Text;
 using VirtualRoulette.Shared;
 using VirtualRoulette.Shared.Errors;
+using VirtualRoulette.Shared.Result;
 
 namespace VirtualRoulette.Core.Services.PasswordHasher;
 

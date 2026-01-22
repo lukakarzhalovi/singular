@@ -8,6 +8,7 @@ using VirtualRoulette.Core.DTOs.Responses;
 using VirtualRoulette.Core.Entities;
 using VirtualRoulette.Presentation.Configuration.Settings;
 using VirtualRoulette.Shared.Pagination;
+using VirtualRoulette.Shared.Result;
 
 namespace VirtualRoulette.Presentation.Controllers;
 

@@ -3,6 +3,7 @@ using VirtualRoulette.Shared;
 using VirtualRoulette.Core.Entities;
 using VirtualRoulette.Shared.Errors;
 using VirtualRoulette.Shared.Pagination;
+using VirtualRoulette.Shared.Result;
 
 namespace VirtualRoulette.Infrastructure.Persistence.Repositories;
 

@@ -1,6 +1,7 @@
 using System.Security.Claims;
 using Microsoft.AspNetCore.SignalR;
 using VirtualRoulette.Shared.Errors;
+using VirtualRoulette.Shared.Result;
 
 namespace VirtualRoulette.Shared.Helpers;
 
@@ -14,12 +15,12 @@ public static class UserHelper
             var parsed = int.TryParse(userIdClaim, out var id);
 
             return !parsed 
-                ? Result.Failure<int>(DomainError.User.NotFound) 
-                : Result.Success(id);
+                ? Result.Result.Failure<int>(DomainError.User.NotFound) 
+                : Result.Result.Success(id);
         }
         catch (Exception)
         {
-            return Result.Failure<int>(DomainError.User.Unauthorized);
+            return Result.Result.Failure<int>(DomainError.User.Unauthorized);
         }
     }
     
@@ -31,12 +32,12 @@ public static class UserHelper
             var parsed = int.TryParse(userIdClaim, out var id);
 
             return !parsed 
-                ? Result.Failure<int>(DomainError.User.NotFound) 
-                : Result.Success(id);
+                ? Result.Result.Failure<int>(DomainError.User.NotFound) 
+                : Result.Result.Success(id);
         }
         catch (Exception)
         {
-            return Result.Failure<int>(DomainError.User.Unauthorized);
+            return Result.Result.Failure<int>(DomainError.User.Unauthorized);
         }
     }
     
@@ -47,12 +48,12 @@ public static class UserHelper
             var ipAddress = content.Connection.RemoteIpAddress?.ToString();
             
             return ipAddress is null 
-                ? Result.Failure<string>(DomainError.User.IpAddressNotFound) 
-                : Result.Success(ipAddress);
+                ? Result.Result.Failure<string>(DomainError.User.IpAddressNotFound) 
+                : Result.Result.Success(ipAddress);
         }
         catch (Exception)
         {
-            return Result.Failure<string>(DomainError.User.IpAddressNotFound);
+            return Result.Result.Failure<string>(DomainError.User.IpAddressNotFound);
         }
     }
 }

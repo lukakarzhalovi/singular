@@ -1,7 +1,7 @@
 using VirtualRoulette.Shared.Errors;
 using ErrorPayload = VirtualRoulette.Shared.Errors.ErrorPayload;
 
-namespace VirtualRoulette.Shared;
+namespace VirtualRoulette.Shared.Result;
 
 public class Result
 {

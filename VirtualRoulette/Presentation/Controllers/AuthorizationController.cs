@@ -7,6 +7,7 @@ using VirtualRoulette.Presentation.Filters;
 using VirtualRoulette.Core.DTOs.Responses;
 using VirtualRoulette.Core.DTOs.Requests;
 using VirtualRoulette.Presentation.Configuration.Settings;
+using VirtualRoulette.Shared.Result;
 
 namespace VirtualRoulette.Presentation.Controllers;
 

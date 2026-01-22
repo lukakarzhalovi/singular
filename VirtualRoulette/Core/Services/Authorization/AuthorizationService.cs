@@ -12,6 +12,7 @@ using VirtualRoulette.Infrastructure.Persistence.Repositories;
 using VirtualRoulette.Core.Entities;
 using VirtualRoulette.Presentation.Configuration.Settings;
 using VirtualRoulette.Shared.Errors;
+using VirtualRoulette.Shared.Result;
 using UserEntity = VirtualRoulette.Core.Entities.User;
 
 namespace VirtualRoulette.Core.Services.Authorization;
