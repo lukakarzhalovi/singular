@@ -63,7 +63,6 @@ public class AuthorizationServiceTests
             _signalRSettings
         );
 
-        // Setup HttpContext with mocked service provider for authentication
         var serviceProvider = Substitute.For<IServiceProvider>();
         var authenticationService = Substitute.For<IAuthenticationService>();
         serviceProvider.GetService(typeof(IAuthenticationService)).Returns(authenticationService);
@@ -125,7 +124,7 @@ public class AuthorizationServiceTests
         var password = "password123";
         _validatorUserRepository
             .UsernameExistsAsync(username)
-            .Returns(Result.Success(true)); // Username exists, validation should fail
+            .Returns(Result.Success(true));
 
         // Act
         var result = await _authorizationService.Register(username, password);
@@ -144,7 +143,7 @@ public class AuthorizationServiceTests
         var error = DomainError.PasswordHasher.HashError;
         _validatorUserRepository
             .UsernameExistsAsync(username)
-            .Returns(Result.Success(false)); // Username doesn't exist, validation passes
+            .Returns(Result.Success(false));
         _passwordHasherService
             .HashPassword(password)
             .Returns(Result.Failure<string>(error));
@@ -263,7 +262,6 @@ public class AuthorizationServiceTests
 
         // Assert
         result.IsSuccess.Should().BeTrue();
-        // RemoveConnection is only called if connectionId is not null (see implementation)
         _connectionTracker.DidNotReceive().RemoveConnection(userId);
         _activityTracker.Received(1).RemoveUser(userId);
     }
@@ -272,7 +270,7 @@ public class AuthorizationServiceTests
     {
         _validatorUserRepository
             .UsernameExistsAsync(username)
-            .Returns(Result.Success(false)); // Username doesn't exist
+            .Returns(Result.Success(false));
         _passwordHasherService
             .HashPassword(password)
             .Returns(Result.Success(passwordHash));

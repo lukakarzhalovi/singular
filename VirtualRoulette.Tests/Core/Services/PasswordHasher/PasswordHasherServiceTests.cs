@@ -26,10 +26,9 @@ public class PasswordHasherServiceTests
         // Assert
         result.IsSuccess.Should().BeTrue();
         result.Value.Should().NotBeNullOrEmpty();
-        // Hash format: iterations:salt:hash
         var parts = result.Value.Split(':');
         parts.Should().HaveCount(3);
-        parts[0].Should().Be("100000"); // Iterations
+        parts[0].Should().Be("100000");
     }
 
     [Fact]
@@ -151,7 +150,6 @@ public class PasswordHasherServiceTests
         // Assert
         hash1.IsSuccess.Should().BeTrue();
         hash2.IsSuccess.Should().BeTrue();
-        // Different salts should produce different hashes
         hash1.Value.Should().NotBe(hash2.Value);
     }
 

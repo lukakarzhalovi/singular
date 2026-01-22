@@ -82,7 +82,7 @@ public class RouletteServiceTests
     public async Task Bet_WhenUserNotFound_ShouldReturnFailure()
     {
         // Arrange
-        var betString = "[{\"T\": \"v\", \"I\": 20, \"C\": 1, \"K\": 1}]"; // Valid bet format
+        var betString = "[{\"T\": \"v\", \"I\": 20, \"C\": 1, \"K\": 1}]";
         var userId = 1;
         var ipAddress = "127.0.0.1";
         _userRepository
@@ -101,10 +101,10 @@ public class RouletteServiceTests
     public async Task Bet_WhenInsufficientBalance_ShouldReturnFailure()
     {
         // Arrange
-        var betString = "[{\"T\": \"v\", \"I\": 20, \"C\": 10, \"K\": 1}]"; // Bet amount: 10 cents (C field)
+        var betString = "[{\"T\": \"v\", \"I\": 20, \"C\": 10, \"K\": 1}]"; 
         var userId = 1;
         var ipAddress = "127.0.0.1";
-        var user = CreateUser(userId, balance: 0); // Less than bet amount (bet is 1 cent)
+        var user = CreateUser(userId, balance: 0); 
         _userRepository
             .GetById(userId)
             .Returns(Result.Success<Entities.User?>(user));
@@ -121,10 +121,10 @@ public class RouletteServiceTests
     public async Task Bet_WithValidBet_ShouldProcessBetSuccessfully()
     {
         // Arrange
-        var betString = "[{\"T\": \"v\", \"I\": 20, \"C\": 1, \"K\": 1}]"; // Valid bet format from README
+        var betString = "[{\"T\": \"v\", \"I\": 20, \"C\": 1, \"K\": 1}]";
         var userId = 1;
         var ipAddress = "127.0.0.1";
-        var user = CreateUser(userId, balance: 1000); // Enough balance for bet
+        var user = CreateUser(userId, balance: 1000);
         SetupSuccessfulBetScenario(userId, user, betString);
 
         // Act
@@ -238,7 +238,7 @@ public class RouletteServiceTests
             .GetById(userId)
             .Returns(
                 Result.Success<Entities.User?>(user),
-                Result.Success<Entities.User?>(null) // Second call returns null
+                Result.Success<Entities.User?>(null)
             );
         _unitOfWork.BeginTransactionAsync().Returns(Task.CompletedTask);
 
@@ -264,7 +264,7 @@ public class RouletteServiceTests
             .GetById(userId)
             .Returns(
                 Result.Success<Entities.User?>(userWithBalance),
-                Result.Success<Entities.User?>(userWithoutBalance) // Second call returns user with insufficient balance
+                Result.Success<Entities.User?>(userWithoutBalance)
             );
         _unitOfWork.BeginTransactionAsync().Returns(Task.CompletedTask);
 
@@ -283,7 +283,7 @@ public class RouletteServiceTests
             .GetById(userId)
             .Returns(
                 Result.Success<Entities.User?>(user),
-                Result.Success<Entities.User?>(user) // Second call for transaction
+                Result.Success<Entities.User?>(user)
             );
         _jackpotCache
             .Get()
